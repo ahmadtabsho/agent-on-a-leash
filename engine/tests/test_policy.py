@@ -315,3 +315,24 @@ def test_a_period_limit_is_not_compared_against_a_per_order_limit():
     )
     assert binds_more_tightly(period, per_order) is None
     assert not is_unsatisfiable(period, per_order)
+
+
+@pytest.mark.parametrize(
+    ("instruction", "expected"),
+    [
+        ("Buy me black running shoes for up to CHF 200.", "black running shoes"),
+        ("Buy us a laptop stand from a shop I use regularly.", "laptop stand"),
+        ("Buy a 27-inch monitor under CHF 400.", "27-inch monitor"),
+        ("Buy the 27-inch monitor I chose for CHF 400 or less.", "27-inch monitor"),
+        ("Replace my worn road-running shoes in size 43.", "road-running shoes"),
+        # A category word names a kind of thing, so the item_category rule
+        # already covers it and no literal phrase is stored.
+        ("Buy us groceries for delivery under CHF 80.", None),
+        ("The agent may buy clothing for me, up to CHF 250 per order.", None),
+    ],
+)
+def test_the_requested_item_excludes_who_it_is_for_and_where_from(instruction, expected):
+    """"Buy me shoes from X" asks for shoes — not for "me shoes from X"."""
+    policy = compile_policy(instruction)
+    rule = rule_for(policy, "derived.requested_item")
+    assert (rule.value if rule else None) == expected

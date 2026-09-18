@@ -47,6 +47,18 @@ These are the constraints the challenge grades on, and they shape every module:
 | `docs/reference/` | Partner-supplied reference material |
 | `scripts/` | Offline replay and developer helpers |
 
+### Commands
+
+| Command | What it does |
+| --- | --- |
+| `leash check` | Verify the data pack against its manifest |
+| `leash health` | Probe the hosted sandbox |
+| `leash policy "<instruction>"` | Compile an instruction into checks, guidance and questions |
+| `leash validate <file.json>` | Check a JSON file against the event contract |
+| `leash replay [--evidence]` | Replay the supplied scenarios offline |
+| `leash demo` | The three demonstration moments |
+| `leash worker` | Poll the sandbox and answer live purchases |
+
 ## Status
 
 | # | Step | State |
@@ -57,9 +69,9 @@ These are the constraints the challenge grades on, and they shape every module:
 | 4 | Decision engine | done |
 | 5 | Offline replay harness | done |
 | 6 | Sandbox API client and worker | done |
-| 7 | Control UI | todo |
+| 7 | Control UI | done |
 | 8 | LLM assist with fallback | done |
-| 9 | Demo script and architecture doc | todo |
+| 9 | Demo script and architecture doc | done |
 
 ## Getting started
 
@@ -82,8 +94,23 @@ instruction compiles to:
 Replay every supplied scenario offline, with no network and no API key:
 
 ```bash
-.venv/bin/leash replay                          # all 45 attempts
+make replay                      # all 45 attempts, every decision
+make demo                        # the three things the brief asks to show
 .venv/bin/leash replay --scenario SCEN0004 --evidence
+```
+
+Run the interface. The control API and the UI are separate processes, as they
+would be deployed:
+
+```bash
+make serve                       # control API on :8000
+make ui                          # control interface on :5173
+```
+
+On the event day, with `TEAM_API_KEY` set in `.env`:
+
+```bash
+make worker                      # long-poll the sandbox and answer every purchase
 ```
 
 The hosted sandbox needs no key for its health probe:

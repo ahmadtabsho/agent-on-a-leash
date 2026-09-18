@@ -30,3 +30,6 @@ Screenshot*.png
 
 # Local Claude Code settings
 .claude/settings.local.json
+
+# UI build output
+ui/dist/

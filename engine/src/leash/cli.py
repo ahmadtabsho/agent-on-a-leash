@@ -72,7 +72,47 @@ def cmd_validate(args: argparse.Namespace) -> int:
     return 1 if failed else 0
 
 
-COMMANDS = {"check": cmd_check, "health": cmd_health, "validate": cmd_validate}
+def cmd_policy(args: argparse.Namespace) -> int:
+    """Compile an instruction into checks, guidance, and open questions."""
+    from .datapack import load_table
+    from .policy import compile_policy
+
+    text = args.instruction
+    if not text:
+        catalogue = {r["scenario_id"]: r["cardholder_instruction"] for r in load_table("scenario_catalogue")}
+        if args.scenario not in catalogue:
+            print(f"unknown scenario {args.scenario!r}; have {', '.join(sorted(catalogue))}")
+            return 1
+        text = catalogue[args.scenario]
+
+    policy = compile_policy(text)
+    if args.json:
+        print(json.dumps(policy.to_draft_payload(), indent=2))
+        return 0
+
+    print(f'\nInstruction\n  "{text}"\n')
+    print("Checks we will enforce")
+    for rule in policy.hard_rules:
+        window = f" over {rule.period_days}d" if rule.period_days else ""
+        value = rule.value if not isinstance(rule.value, list) else ", ".join(rule.value)
+        print(f"  - {rule.field} {rule.operator.value} {value}{window}")
+    print("\nWhat that means")
+    for line in policy.guidance:
+        print(f"  - {line}")
+    if policy.open_questions:
+        print("\nWe need you to decide")
+        for question in policy.open_questions:
+            print(f"  ? {question}")
+    print(f"\nWhen we cannot settle a purchase: {policy.uncertainty_policy.value}\n")
+    return 0
+
+
+COMMANDS = {
+    "check": cmd_check,
+    "health": cmd_health,
+    "validate": cmd_validate,
+    "policy": cmd_policy,
+}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -83,6 +123,10 @@ def main(argv: list[str] | None = None) -> int:
         parser_ = sub.add_parser(name, help=(fn.__doc__ or "").strip().splitlines()[0])
         if name == "validate":
             parser_.add_argument("paths", nargs="+", help="JSON event or envelope files")
+        if name == "policy":
+            parser_.add_argument("instruction", nargs="?", help="the customer's own words")
+            parser_.add_argument("--scenario", default="SCEN0000", help="use a catalogue instruction")
+            parser_.add_argument("--json", action="store_true", help="print the draft request body")
     args = parser.parse_args(argv)
     return COMMANDS[args.command](args)
 

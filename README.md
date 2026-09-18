@@ -52,7 +52,7 @@ These are the constraints the challenge grades on, and they shape every module:
 | # | Step | State |
 | --- | --- | --- |
 | 1 | Repo skeleton, vendored data pack | done |
-| 2 | Domain model and event parser | todo |
+| 2 | Domain model and event parser | done |
 | 3 | Policy compiler (instruction to rules) | todo |
 | 4 | Decision engine | todo |
 | 5 | Offline replay harness | todo |
@@ -66,7 +66,14 @@ These are the constraints the challenge grades on, and they shape every module:
 ```bash
 cp .env.example .env     # add TEAM_API_KEY on event day
 make setup               # create the venv and install the engine
-make check               # sanity-check the vendored data pack
+make check               # verify the vendored data pack against its manifest
+make test                # run the suite
+```
+
+Check any JSON file against the published event contract:
+
+```bash
+.venv/bin/leash validate path/to/event.json
 ```
 
 The hosted sandbox needs no key for its health probe:

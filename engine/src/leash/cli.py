@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 
 import httpx
@@ -42,7 +43,36 @@ def cmd_health(_: argparse.Namespace) -> int:
     return 0 if response.status_code == 200 else 1
 
 
-COMMANDS = {"check": cmd_check, "health": cmd_health}
+def cmd_validate(args: argparse.Namespace) -> int:
+    """Validate JSON files against the authorization event contract."""
+    from .models import EventContractError, parse_event
+
+    failed = 0
+    for path in args.paths:
+        try:
+            with open(path, encoding="utf-8") as handle:
+                raw = json.load(handle)
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"  [FAIL] {path}\n           not readable JSON: {exc}")
+            failed += 1
+            continue
+        # Accept either a bare event or a poll envelope wrapping one.
+        payload = raw.get("data", raw) if isinstance(raw, dict) else raw
+        try:
+            event = parse_event(payload)
+        except EventContractError as exc:
+            print(f"  [FAIL] {path}  ({exc.stage})")
+            for problem in exc.problems:
+                print(f"           {problem}")
+            failed += 1
+            continue
+        auth = event.authorization
+        print(f"  [ok  ] {path}  {auth.authorization_id}  {auth.billing_amount_chf} CHF")
+    print(f"\n{len(args.paths) - failed}/{len(args.paths)} events valid.")
+    return 1 if failed else 0
+
+
+COMMANDS = {"check": cmd_check, "health": cmd_health, "validate": cmd_validate}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -50,7 +80,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="leash", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     for name, fn in COMMANDS.items():
-        sub.add_parser(name, help=(fn.__doc__ or "").strip().splitlines()[0])
+        parser_ = sub.add_parser(name, help=(fn.__doc__ or "").strip().splitlines()[0])
+        if name == "validate":
+            parser_.add_argument("paths", nargs="+", help="JSON event or envelope files")
     args = parser.parse_args(argv)
     return COMMANDS[args.command](args)
 

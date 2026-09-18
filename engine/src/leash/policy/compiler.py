@@ -70,6 +70,18 @@ REQUESTED_ITEM = (
     re.compile(r"\bbuy\s+(?:one\s+|a\s+|an\s+)?(?:ordinary\s+)?(?P<what>[\w\s-]+?)(?=\s+for\b|[,.;]|$)", re.IGNORECASE),
 )
 
+# Words that name a kind of thing rather than a particular thing. "One ordinary
+# grocery item" describes a category, which the item_category rule already
+# covers; matching a cart line against the literal phrase "grocery item" would
+# reject a basket of fresh produce for not being called that.
+GENERIC_ITEM_WORDS = frozenset(
+    {
+        "item", "items", "order", "orders", "thing", "things", "stuff",
+        "goods", "product", "products", "purchase", "purchases", "shopping",
+        "ordinary", "usual", "regular", "some", "any", "my", "our", "the",
+    }
+)
+
 SIZE = re.compile(r"\bsize\s+(?P<size>[\w-]+)", re.IGNORECASE)
 INCH = re.compile(r"(?P<inch>\d+)[\s-]*(?:inch|\"|in\b)", re.IGNORECASE)
 
@@ -400,6 +412,11 @@ def _extract_requested_item(text: str) -> tuple[list[CompiledRule], list[str], l
         what = " ".join(match.group("what").split()).strip().lower()
         # Strip leading filler the patterns can pick up before the noun.
         what = re.sub(r"^(?:my|our|the|some)\s+", "", what)
+        tokens = {t for t in re.split(r"[\s-]+", what) if t}
+        generic = GENERIC_ITEM_WORDS | set(ITEM_CATEGORY_WORDS)
+        if tokens and tokens <= generic:
+            # Nothing specific was named. The category rule already covers it.
+            break
         if what and len(what) <= 60:
             rules.append(
                 CompiledRule(

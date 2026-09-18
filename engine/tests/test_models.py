@@ -163,3 +163,15 @@ def test_connection_check_fixture_is_readable():
     with (DATA_DIR / "scenario_fixtures" / "connection_check.json").open() as fh:
         payload = json.load(fh)
     assert isinstance(payload, dict) and payload
+
+
+def test_an_event_survives_a_json_round_trip(raw):
+    """Serialising and reparsing must produce a contract-valid event.
+
+    Pydantic writes Decimal as a JSON string by default, which would make our
+    own output fail the schema it was built from.
+    """
+    once = parse_event(raw)
+    twice = parse_event(json.loads(json.dumps(once.model_dump(mode="json"))))
+    assert twice == once
+    assert isinstance(once.model_dump(mode="json")["authorization"]["amount"], float)

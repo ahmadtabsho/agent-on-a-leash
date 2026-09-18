@@ -24,7 +24,14 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    PlainSerializer,
+    field_validator,
+)
 
 from .enums import (
     Attribution,
@@ -50,7 +57,16 @@ CalendarDate = Annotated[date, Field(strict=False)]
 
 # Amounts are parsed as Decimal so limit arithmetic never goes through a float.
 # The schema says "number", and strict mode still rejects a string here.
-Amount = Annotated[Decimal, Field(strict=False)]
+#
+# The serialiser matters as much as the parser. Pydantic writes a Decimal as a
+# JSON *string* by default, so an event round-tripped through model_dump would
+# come back failing the contract it was built from. Money stays Decimal in
+# memory and goes back out as a number.
+Amount = Annotated[
+    Decimal,
+    Field(strict=False),
+    PlainSerializer(float, return_type=float, when_used="json"),
+]
 
 # Closed vocabularies travel as their string values, so they opt out of strict
 # mode too. The enum itself still rejects anything outside the schema's list.

@@ -147,12 +147,77 @@ def cmd_replay(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_demo(_: argparse.Namespace) -> int:
+    """Show the three things the brief asks a demo to show."""
+    from .replay.demo import build_demo
+
+    demo = build_demo()
+    for index, moment in enumerate(demo["moments"], start=1):
+        print(f"\n{'=' * 92}")
+        print(f"{index}. {moment.heading}")
+        print(
+            f"   {moment.source_id} at {moment.merchant} for CHF {moment.amount_chf:.2f} "
+            f"-> {moment.decision.upper()} in {moment.elapsed_ms:.2f} ms"
+        )
+        print(f"\n   {moment.message}")
+        if moment.evidence:
+            print("\n   What it considered:")
+            for outcome, code, detail in moment.evidence:
+                print(f"     [{outcome}] {code}")
+                print(f"           {detail}")
+
+    print(f"\n{'=' * 92}")
+    print("The customer keeps control")
+    for label, allowed, problem in demo["policy_control"]:
+        mark = "allowed" if allowed else "REFUSED"
+        print(f"   {label:<34} {mark}")
+        if problem:
+            print(f"      {problem}")
+
+    print("\n   What we refuse to decide for them:")
+    for question in demo["open_questions"][:3]:
+        print(f"     ? {question}")
+
+    print(f"\nSlowest decision across all 45 purchases: {demo['slowest_ms']:.2f} ms "
+          "(the platform allows 8000 ms).\n")
+    return 0
+
+
+def cmd_worker(args: argparse.Namespace) -> int:
+    """Run the live worker against the sandbox. Needs TEAM_API_KEY."""
+    from .api import ApiError, LeashClient
+    from .worker import Worker
+
+    try:
+        with LeashClient() as client:
+            worker = Worker(client)
+            print(f"polling {client.settings.base_url} ...")
+            stats = worker.run_until_idle(wait=args.wait, max_empty_polls=args.max_empty)
+    except ApiError as exc:
+        print(f"worker stopped: {exc}")
+        return 1
+
+    print(
+        f"\n{stats.decided} decided ({stats.replayed} repeats), "
+        f"{stats.by_decision['approve']} approved, {stats.by_decision['decline']} declined, "
+        f"{stats.by_decision['step_up']} sent to the customer"
+    )
+    print(f"{stats.polled} polls, {stats.empty_polls} empty; slowest {stats.slowest_ms:.2f} ms")
+    if stats.parse_failures:
+        print(f"{stats.parse_failures} request(s) could not be read and were escalated")
+    if stats.missed_deadlines:
+        print(f"WARNING: {stats.missed_deadlines} decision(s) finished past the deadline")
+    return 0
+
+
 COMMANDS = {
     "check": cmd_check,
     "health": cmd_health,
     "validate": cmd_validate,
     "policy": cmd_policy,
     "replay": cmd_replay,
+    "demo": cmd_demo,
+    "worker": cmd_worker,
 }
 
 
@@ -164,6 +229,9 @@ def main(argv: list[str] | None = None) -> int:
         parser_ = sub.add_parser(name, help=(fn.__doc__ or "").strip().splitlines()[0])
         if name == "validate":
             parser_.add_argument("paths", nargs="+", help="JSON event or envelope files")
+        if name == "worker":
+            parser_.add_argument("--wait", type=int, default=25, help="long-poll seconds")
+            parser_.add_argument("--max-empty", type=int, default=3, dest="max_empty")
         if name == "replay":
             parser_.add_argument("--scenario", help="one scenario id; default is all")
             parser_.add_argument("--evidence", action="store_true", help="show every finding")

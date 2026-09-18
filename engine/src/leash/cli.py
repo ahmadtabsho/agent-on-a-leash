@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
@@ -36,11 +37,28 @@ def cmd_health(_: argparse.Namespace) -> int:
         print(f"unreachable: {url}\n  {exc}")
         return 1
     print(f"{response.status_code} {url}\n  {response.text.strip()}")
-    if settings.api_key:
-        print("  TEAM_API_KEY is set.")
-    else:
-        print("  TEAM_API_KEY is not set; keyed endpoints stay unavailable.")
-    return 0 if response.status_code == 200 else 1
+    if response.status_code != 200:
+        return 1
+
+    # /healthz needs no key, so reaching it proves nothing about the key.
+    # Actually spend one keyed call, or this command reports success on a
+    # credential that does not work.
+    if not settings.api_key:
+        print("  no TEAM_API_KEY; keyed endpoints stay unavailable")
+        return 1
+
+    from .api import ApiError, LeashClient
+
+    try:
+        with LeashClient(settings) as client:
+            data = client.bootstrap()
+    except ApiError as exc:
+        print(f"  TEAM_API_KEY was REJECTED by the service\n    {exc}")
+        return 1
+
+    scenarios = data.get("scenarios") or data.get("data", {}).get("scenarios") or []
+    print(f"  TEAM_API_KEY accepted; {len(scenarios)} scenario(s) available")
+    return 0
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
@@ -210,6 +228,100 @@ def cmd_worker(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_run(args: argparse.Namespace) -> int:
+    """Run one scenario live: compile, confirm, start, decide, resolve."""
+    from .api import ApiError, LeashClient
+    from .models.enums import Decision
+    from .worker import execute, prepare, resolve_pending
+
+    try:
+        live = prepare(args.scenario, args.instruction)
+    except KeyError as exc:
+        print(exc)
+        return 1
+
+    print(f'\nPolicy compiled from:\n  "{live.instruction}"\n')
+    print("  Checks to be authorised:")
+    for rule in live.policy.hard_rules:
+        value = ", ".join(rule.value) if isinstance(rule.value, list) else rule.value
+        window = f" over any {rule.period_days} days" if rule.period_days else ""
+        print(f"    - {rule.field} {rule.operator.value} {value}{window}")
+    if live.policy.open_questions:
+        print("\n  Unresolved, and left to the customer:")
+        for question in live.policy.open_questions:
+            print(f"    ? {question}")
+    print(f"\n  When we cannot settle a purchase: {live.policy.uncertainty_policy.value}")
+
+    # Confirmation is a real gate. --yes stands in for the customer saying yes;
+    # it does not remove the step.
+    if not args.yes:
+        answer = input("\nAuthorise these checks? [y/N] ").strip().lower()
+        if answer not in ("y", "yes"):
+            print("Nothing was authorised. No run started.")
+            return 0
+
+    log_path = Path(args.log) if args.log else None
+    try:
+        with LeashClient() as client:
+            print(f"\nConnecting to {client.settings.base_url}")
+            live = execute(
+                live, client, log_path=log_path, wait=args.wait, max_empty_polls=args.max_empty
+            )
+
+            print()
+            for stage, detail in live.steps:
+                print(f"  [{stage:<8}] {detail}")
+
+            stats = live.stats
+            print(
+                f"\n  {stats.decided} purchase(s) answered: "
+                f"{stats.by_decision['approve']} approved, "
+                f"{stats.by_decision['decline']} declined, "
+                f"{stats.by_decision['step_up']} sent to the customer"
+            )
+            print(f"  {stats.polled} poll(s), {stats.empty_polls} empty; "
+                  f"slowest decision {stats.slowest_ms:.2f} ms")
+            if stats.replayed:
+                print(f"  {stats.replayed} repeat delivery(ies) replayed, not recomputed")
+            if stats.parse_failures:
+                print(f"  {stats.parse_failures} request(s) could not be read and were escalated")
+            if stats.missed_deadlines:
+                print(f"  WARNING: {stats.missed_deadlines} decision(s) finished past the deadline")
+
+            # The human path. The person at the terminal is the customer here.
+            if live.pending:
+                print(f"\n  {len(live.pending)} purchase(s) are waiting on you:\n")
+                for review in list(live.pending):
+                    print(f"    {review.source_authorization_id}  "
+                          f"{review.merchant_name}  CHF {review.billing_amount_chf:.2f}")
+                    print(f"      {review.customer_message}")
+                    if args.resolve == "ask":
+                        choice = input("      approve / decline / skip? ").strip().lower()
+                    else:
+                        choice = args.resolve
+                    if choice.startswith("a"):
+                        resolve_pending(live, review.authorization_id, Decision.APPROVE)
+                        print("      -> you approved it\n")
+                    elif choice.startswith("d"):
+                        resolve_pending(live, review.authorization_id, Decision.DECLINE)
+                        print("      -> you declined it\n")
+                    else:
+                        print("      -> left waiting\n")
+
+            if args.revoke and live.mandate_id:
+                client.revoke_mandate(live.mandate_id)
+                print(f"  permission withdrawn: {live.mandate_id} is revoked")
+
+    except ApiError as exc:
+        print(f"\nStopped: {exc}")
+        return 1
+
+    if log_path:
+        print(f"\n  every decision and its evidence: {log_path}")
+    print()
+    return 0
+
+
 COMMANDS = {
     "check": cmd_check,
     "health": cmd_health,
@@ -218,6 +330,7 @@ COMMANDS = {
     "replay": cmd_replay,
     "demo": cmd_demo,
     "worker": cmd_worker,
+    "run": cmd_run,
 }
 
 
@@ -229,6 +342,18 @@ def main(argv: list[str] | None = None) -> int:
         parser_ = sub.add_parser(name, help=(fn.__doc__ or "").strip().splitlines()[0])
         if name == "validate":
             parser_.add_argument("paths", nargs="+", help="JSON event or envelope files")
+        if name == "run":
+            parser_.add_argument("--scenario", default="SCEN0000", help="scenario to run")
+            parser_.add_argument("--instruction", help="use your own wording instead")
+            parser_.add_argument("--yes", action="store_true", help="authorise without prompting")
+            parser_.add_argument("--resolve", default="ask",
+                                 choices=["ask", "approve", "decline", "skip"],
+                                 help="how to answer paused purchases")
+            parser_.add_argument("--revoke", action="store_true",
+                                 help="withdraw permission when the run ends")
+            parser_.add_argument("--log", help="write the decision journal here")
+            parser_.add_argument("--wait", type=int, default=25)
+            parser_.add_argument("--max-empty", type=int, default=3, dest="max_empty")
         if name == "worker":
             parser_.add_argument("--wait", type=int, default=25, help="long-poll seconds")
             parser_.add_argument("--max-empty", type=int, default=3, dest="max_empty")

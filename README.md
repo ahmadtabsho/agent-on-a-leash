@@ -58,6 +58,7 @@ These are the constraints the challenge grades on, and they shape every module:
 | `leash replay [--evidence]` | Replay the supplied scenarios offline |
 | `leash demo` | The three demonstration moments |
 | `leash worker` | Poll the sandbox and answer live purchases |
+| `leash run --scenario SCEN0004` | The whole live sequence: compile, confirm, run, decide, resolve |
 
 ## Status
 
@@ -110,7 +111,10 @@ make ui                          # control interface on :5173
 On the event day, with `TEAM_API_KEY` set in `.env`:
 
 ```bash
-make worker                      # long-poll the sandbox and answer every purchase
+make health                      # verifies the key is actually accepted, not just present
+make run                         # the whole sequence for SCEN0000
+
+.venv/bin/leash run --scenario SCEN0004 --log runs/live.jsonl
 ```
 
 The hosted sandbox needs no key for its health probe:

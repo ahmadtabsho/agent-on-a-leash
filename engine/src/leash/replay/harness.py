@@ -9,6 +9,7 @@ from ..models.enums import Decision
 from ..models.events import AuthorizationEvent
 from ..policy import CompiledPolicy, compile_policy
 from .builder import EventBuilder, ScenarioReplay
+from .log import DecisionLog, DecisionRecord
 
 
 @dataclass
@@ -22,6 +23,7 @@ class RunReport:
     replay: ScenarioReplay
     policy: CompiledPolicy
     steps: list[Step]
+    log: DecisionLog | None = None
 
     @property
     def counts(self) -> dict[str, int]:
@@ -40,11 +42,19 @@ def replay_scenario(
     *,
     builder: EventBuilder | None = None,
     engine: DecisionEngine | None = None,
+    log_path=None,
 ) -> RunReport:
+    """Replay one scenario in delivery order, journalling every decision."""
     builder = builder or EventBuilder()
     engine = engine or DecisionEngine()
     policy = compile_policy(builder.catalogue[scenario_id]["cardholder_instruction"])
     replay = builder.build(scenario_id, policy)
+
     state = RunState(run_id=scenario_id)
-    steps = [Step(event, engine.decide(event, state)) for event in replay.events]
-    return RunReport(replay=replay, policy=policy, steps=steps)
+    log = DecisionLog(log_path)
+    steps = []
+    for event in replay.events:
+        verdict = engine.decide(event, state)
+        log.append(DecisionRecord.build(scenario_id, event, verdict))
+        steps.append(Step(event, verdict))
+    return RunReport(replay=replay, policy=policy, steps=steps, log=log)

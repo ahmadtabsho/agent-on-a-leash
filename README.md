@@ -55,10 +55,10 @@ These are the constraints the challenge grades on, and they shape every module:
 | 2 | Domain model and event parser | done |
 | 3 | Policy compiler (instruction to rules) | done |
 | 4 | Decision engine | done |
-| 5 | Offline replay harness | todo |
-| 6 | Sandbox API client and worker | todo |
+| 5 | Offline replay harness | done |
+| 6 | Sandbox API client and worker | done |
 | 7 | Control UI | todo |
-| 8 | LLM assist with fallback | todo |
+| 8 | LLM assist with fallback | done |
 | 9 | Demo script and architecture doc | todo |
 
 ## Getting started

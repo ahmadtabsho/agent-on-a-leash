@@ -1,0 +1,67 @@
+item_id,item_name,item_category,item_description,unit_price_min_chf,unit_price_typical_chf,unit_price_max_chf
+IT0001,Fresh produce selection,groceries,Seasonal fruit and vegetables; a typical weekly produce basket.,12.00,28.00,90.00
+IT0002,Pantry staples,groceries,"Long-lasting cupboard staples including rice, pasta, and tinned goods.",20.00,50.00,140.00
+IT0003,Breakfast supplies,groceries,"Bread, oats, and yoghurt for everyday breakfasts.",15.00,30.00,100.00
+IT0004,Weekly grocery basket,groceries,Food and household staples for one weekly shop.,45.00,95.00,180.00
+IT0005,Digital gift voucher,gift_card,Digital gift card spendable with the issuing merchant.,20.00,50.00,200.00
+IT0006,Kitchen storage containers,household,Reusable food containers in assorted sizes.,15.00,38.00,190.00
+IT0007,Household essentials,household,Shared consumables and common household refills.,20.00,70.00,180.00
+IT0008,Cleaning supplies,household,Surface and laundry cleaning products in standard pack sizes.,12.00,45.00,110.00
+IT0009,Everyday waterproof jacket,clothing,Waterproof everyday jacket with a standard return window.,60.00,140.00,280.00
+IT0010,Waterproof work jacket,clothing,Waterproof jacket suited to working days.,55.00,120.00,240.00
+IT0011,Waterproof rain coat,clothing,Lightweight waterproof rain coat with a shorter return window.,50.00,130.00,260.00
+IT0012,Hotel room,hotel,Hotel room booking; cancellation terms vary by rate and are carried on the order.,130.00,280.00,620.00
+IT0013,Serviced apartment stay,hotel,Serviced apartment booking; cancellation terms vary by rate and are carried on the order.,130.00,280.00,620.00
+IT0014,Road-running shoes,sporting_goods,Road-running shoes available in standard sizes.,70.00,140.00,240.00
+IT0015,Monthly learning subscription,subscriptions,One month of a digital learning subscription.,8.00,19.00,70.00
+IT0016,Premium membership,membership,Premium tier of a digital learning service for one month.,15.00,30.00,90.00
+IT0017,27-inch computer monitor,electronics,27-inch computer monitor covered by a standard manufacturer warranty.,140.00,270.00,650.00
+IT0018,Fresh produce order,groceries,Standing fresh produce order with seasonal contents.,12.00,42.00,90.00
+IT0019,Pantry restock,groceries,Restock of shared household pantry staples.,20.00,60.00,140.00
+IT0020,Family breakfast supplies,groceries,Breakfast staples sized for a family.,15.00,45.00,100.00
+IT0021,Regional rail ticket,transport,Single journey ticket on regional public transport.,8.00,28.00,80.00
+IT0022,Monthly transit pass,transport,Monthly pass for unlimited regional public transport.,60.00,90.00,140.00
+IT0023,Airport transfer,transport,Prepaid transfer between the city and the airport.,35.00,75.00,150.00
+IT0024,City day pass,transport,Day pass for unlimited travel within one city zone.,5.00,12.00,30.00
+IT0025,Fuel purchase,fuel,Standard fuel fill at a service station.,35.00,75.00,130.00
+IT0026,Electric vehicle charging session,fuel,One electric-vehicle charging session.,10.00,30.00,65.00
+IT0027,Motorway service stop,fuel,Fuel and refreshments at a motorway service area.,10.00,35.00,90.00
+IT0028,Fuel and car wash,fuel,Fuel purchase combined with a car wash.,45.00,90.00,145.00
+IT0029,Dinner reservation,dining,Reserved dinner for one or more guests.,35.00,85.00,160.00
+IT0030,Lunch order,dining,Quick lunch order at a café or counter.,15.00,35.00,70.00
+IT0031,Team meal,dining,Shared meal for a small team.,60.00,140.00,280.00
+IT0032,Weekend brunch,dining,Weekend brunch for a small group.,20.00,55.00,110.00
+IT0033,Dinner delivery,food_delivery,Prepared dinner delivered to the door.,25.00,50.00,90.00
+IT0034,Late-shift meal,food_delivery,Prepared meal ordered outside standard hours.,18.00,35.00,70.00
+IT0035,Family meal delivery,food_delivery,Family-sized prepared meal delivered to the door.,40.00,70.00,120.00
+IT0036,Prepared lunch order,food_delivery,Prepared lunch ordered online for pickup or delivery.,15.00,30.00,60.00
+IT0037,Monthly media subscription,subscriptions,One month of a digital media streaming subscription.,8.00,16.00,28.00
+IT0038,Cloud storage plan,subscriptions,Monthly cloud storage plan.,3.00,10.00,24.00
+IT0039,Digital newspaper plan,subscriptions,Monthly digital newspaper subscription.,8.00,18.00,35.00
+IT0040,Music plan,subscriptions,Monthly music streaming subscription.,8.00,14.00,24.00
+IT0041,Paperback book order,books,Paperback book order from a bookseller.,10.00,25.00,55.00
+IT0042,Professional reference book,books,Technical reference or professional book.,35.00,70.00,140.00
+IT0043,Children's book set,books,Set of children's books with clear pricing.,18.00,40.00,85.00
+IT0044,E-book bundle,books,Bundle of digital books on a single purchase.,12.00,35.00,75.00
+IT0045,Noise-cancelling headphones,electronics,Noise-cancelling headphones from a specialist electronics seller.,60.00,190.00,420.00
+IT0046,Computer monitor,electronics,Computer monitor with a standard seller warranty.,140.00,320.00,650.00
+IT0047,Phone charger,electronics,Phone charger and cable accessory.,10.00,30.00,85.00
+IT0048,Tablet accessory,electronics,Tablet accessory such as a cover or keyboard.,15.00,60.00,180.00
+IT0049,Everyday jacket,clothing,Everyday jacket for regular wear.,60.00,140.00,280.00
+IT0050,Work shoes,clothing,Work shoes for regular professional use.,55.00,120.00,240.00
+IT0051,Seasonal clothing order,clothing,Seasonal clothing order from a familiar retailer.,35.00,100.00,260.00
+IT0052,Rain coat,clothing,Rain coat with a clear return window.,50.00,130.00,260.00
+IT0053,Running shoes,sporting_goods,Running shoes available in standard sizes.,70.00,140.00,240.00
+IT0054,Hiking boots,sporting_goods,Hiking boots for trail use.,90.00,180.00,320.00
+IT0055,Cycling accessories,sporting_goods,Cycling accessories from a specialist retailer.,15.00,75.00,250.00
+IT0056,Training equipment,sporting_goods,Training equipment for home or gym use.,20.00,90.00,300.00
+IT0057,Wall paint and brushes,home_improvement,Wall paint and brushes for a renovation project.,45.00,120.00,260.00
+IT0058,Tool set,home_improvement,Tool set for home repair work.,40.00,150.00,480.00
+IT0059,Shelving materials,home_improvement,Shelving materials sized for one room.,30.00,140.00,420.00
+IT0060,Kitchen repair parts,home_improvement,Spare parts for kitchen repairs.,15.00,80.00,260.00
+IT0061,Personal care set,cosmetics,"Everyday personal care and cosmetics such as skincare, toiletries, and grooming products.",10.00,35.00,120.00
+IT0062,Fragrance and beauty gift,cosmetics,Fragrance or beauty product of the kind usually bought as a personal treat rather than a household staple.,25.00,70.00,220.00
+IT0063,Trail-running shoes,sporting_goods,"Off-road running shoes with a lugged sole, sold in standard sizes.",80.00,150.00,260.00
+IT0064,Cycling helmet,sporting_goods,Road cycling helmet sold in standard sizes.,50.00,110.00,250.00
+IT0065,Running socks,sporting_goods,"Technical running socks, usually sold in packs.",8.00,18.00,40.00
+IT0066,Extended protection plan,subscriptions,Optional add-on service extending repair cover beyond the seller warranty.,25.00,79.00,180.00

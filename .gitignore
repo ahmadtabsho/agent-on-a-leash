@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Secrets / local config
+.env
+.env.local
+*.key
+
+# Local run artefacts
+runs/
+*.log
+.leash_state.json
+
+# Scratch
+*.zip
+Screenshot*.png
+.DS_Store
+
+# Local Claude Code settings
+.claude/settings.local.json

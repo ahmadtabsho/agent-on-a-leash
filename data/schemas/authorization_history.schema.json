@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/agent-on-a-leash/authorization-history.schema.json",
+  "title": "Agent on a Leash canonical authorization history",
+  "description": "A participant-visible flat row per historical authorization. Agent provenance is represented by initiator_type; no agent catalogue or expected decision labels are included.",
+  "type": "object",
+  "required": ["record_type", "format", "columns", "null_encoding", "ordering"],
+  "properties": {
+    "record_type": {"const": "authorization_history"},
+    "format": {"const": "csv"},
+    "columns": {
+      "const": [
+        "authorization_id", "customer_id", "account_id", "card_id", "initiator_type", "timestamp", "transaction_type", "status", "amount", "currency", "billing_amount_chf", "merchant_id", "merchant_name", "merchant_category", "merchant_mcc", "merchant_country", "merchant_city", "channel", "card_present", "recurring", "customer_device_id", "description", "related_transaction_id", "account_type", "account_purpose", "base_currency", "per_transaction_limit_chf", "monthly_limit_chf", "card_purpose", "card_status", "online_enabled", "international_enabled", "virtual_card", "customer_home_region", "customer_budget_style", "customer_persona_name", "approved_spend_before_chf", "approved_merchant_transaction_count_before", "approved_device_transaction_count_before", "last_approved_at"
+      ]
+    },
+    "null_encoding": {"const": "empty field"},
+    "ordering": {"const": ["timestamp", "authorization_id"]}
+  },
+  "x-csv-column-contract": {
+    "authorization_id": {"type": "string", "nullable": false},
+    "customer_id": {"type": "string", "nullable": false},
+    "account_id": {"type": "string", "nullable": false},
+    "card_id": {"type": "string", "nullable": false},
+    "initiator_type": {"type": "string", "enum": ["human", "agent", "merchant"], "nullable": false},
+    "timestamp": {"type": "string", "format": "date-time", "nullable": false},
+    "transaction_type": {"type": "string", "enum": ["purchase", "refund", "cash_withdrawal"], "nullable": false},
+    "status": {"type": "string", "enum": ["approved", "declined"], "nullable": false},
+    "amount": {"type": "number", "nullable": false},
+    "currency": {"type": "string", "enum": ["CHF", "EUR", "GBP", "USD"], "nullable": false},
+    "billing_amount_chf": {"type": "number", "nullable": false},
+    "merchant_id": {"type": "string", "nullable": false},
+    "merchant_name": {"type": "string", "nullable": false},
+    "merchant_category": {"type": "string", "nullable": false},
+    "merchant_mcc": {"type": "string", "pattern": "^[0-9]{4}$", "nullable": false},
+    "merchant_country": {"type": "string", "pattern": "^[A-Z]{2}$", "nullable": false},
+    "merchant_city": {"type": "string", "nullable": false},
+    "channel": {"type": "string", "enum": ["ecommerce", "in_store", "mobile_wallet", "recurring", "atm"], "nullable": false},
+    "card_present": {"type": "boolean", "nullable": false},
+    "recurring": {"type": "boolean", "nullable": false},
+    "customer_device_id": {"type": "string", "nullable": true},
+    "description": {"type": "string", "nullable": false},
+    "related_transaction_id": {"type": "string", "nullable": true},
+    "account_type": {"type": "string", "enum": ["credit", "debit", "prepaid"], "nullable": false},
+    "account_purpose": {"type": "string", "nullable": false},
+    "base_currency": {"type": "string", "enum": ["CHF", "EUR", "GBP", "USD"], "nullable": false},
+    "per_transaction_limit_chf": {"type": "number", "nullable": false},
+    "monthly_limit_chf": {"type": "number", "nullable": false},
+    "card_purpose": {"type": "string", "nullable": false},
+    "card_status": {"type": "string", "enum": ["active", "blocked", "expired"], "nullable": false},
+    "online_enabled": {"type": "boolean", "nullable": false},
+    "international_enabled": {"type": "boolean", "nullable": false},
+    "virtual_card": {"type": "boolean", "nullable": false},
+    "customer_home_region": {"type": "string", "nullable": false},
+    "customer_budget_style": {"type": "string", "nullable": false},
+    "customer_persona_name": {"type": "string", "nullable": false},
+    "approved_spend_before_chf": {"type": "number", "nullable": false},
+    "approved_merchant_transaction_count_before": {"type": "integer", "nullable": false},
+    "approved_device_transaction_count_before": {"type": "integer", "nullable": false},
+    "last_approved_at": {"type": "string", "format": "date-time", "nullable": true}
+  },
+  "additionalProperties": false
+}

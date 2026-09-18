@@ -1,0 +1,75 @@
+{
+  "type": "authorization.request",
+  "request_id": "req_example_0001",
+  "deadline_at": "2026-08-12T09:00:08Z",
+  "authorization": {
+    "authorization_id": "AU_EXAMPLE_0001",
+    "source_authorization_id": "AU_EXAMPLE_0001",
+    "scenario_id": "SCEN0000",
+    "replay_order": 1,
+    "mandate_id": "TM_EXAMPLE_0001",
+    "profile_id": "PROFILE_EXAMPLE_0001",
+    "card_id": "CA_EXAMPLE_0001",
+    "initiator_type": "agent",
+    "merchant": {
+      "merchant_id": "ME_EXAMPLE_0001",
+      "merchant_name": "Example Market",
+      "merchant_category": "groceries",
+      "merchant_mcc": "5411",
+      "merchant_country": "CH",
+      "merchant_city": "Zurich",
+      "availability": "store_and_online",
+      "recurring_capable": "false"
+    },
+    "timestamp": "2026-08-12T08:59:59Z",
+    "amount": 20.0,
+    "currency": "CHF",
+    "billing_amount_chf": 20.0,
+    "items_subtotal": 18.0,
+    "delivery_fee": 2.0,
+    "channel": "ecommerce",
+    "customer_device_id": "DVC-EXAMPLE",
+    "authority_status": "active",
+    "card_status_at_attempt": "active",
+    "spend_in_period_before_chf": null,
+    "recent_attempt_count_10m": 0,
+    "fulfillment_method": "delivery",
+    "delivery_by": null,
+    "order_returnable": "unknown",
+    "order_cancellable": "unknown",
+    "related_authorization_id": null,
+    "related_authorization_status": null,
+    "purchase_description": "Example grocery order",
+    "items": [
+      {
+        "line_no": 1,
+        "item_id": "IT_EXAMPLE_0001",
+        "item_name": "Example grocery item",
+        "item_category": "groceries",
+        "quantity": 1,
+        "unit_price": 18.0,
+        "currency": "CHF",
+        "item_details": "Synthetic parser example"
+      }
+    ]
+  },
+  "mandate": {
+    "mandate_id": "TM_EXAMPLE_0001",
+    "status": "active",
+    "customer_id": "CU_EXAMPLE_0001",
+    "card_id": "CA_EXAMPLE_0001",
+    "instruction": "Buy one requested item within my stated limit. Ask me when uncertain.",
+    "hard_rules": [],
+    "uncertainty_policy": "ask",
+    "profile_id": "PROFILE_EXAMPLE_0001"
+  },
+  "context": {
+    "approved_spend_in_period_chf": 0.0,
+    "recent_authorizations": []
+  },
+  "runtime": {
+    "received_at": "2026-08-12T09:00:00Z",
+    "history_window_minutes": 10,
+    "context_basis": "run_decisions_and_scenario_timestamps"
+  }
+}

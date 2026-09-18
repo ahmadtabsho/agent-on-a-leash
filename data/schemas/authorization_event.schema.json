@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/agent-on-a-leash/authorization-event.schema.json",
+  "title": "Agent on a Leash authorization request",
+  "description": "Canonical live authorization request. The source actor is explicit as authorization.initiator_type=agent and the active control is one mandate.",
+  "type": "object",
+  "required": ["type", "request_id", "deadline_at", "authorization", "mandate", "context", "runtime"],
+  "properties": {
+    "type": {"const": "authorization.request"},
+    "request_id": {"type": "string", "minLength": 1},
+    "deadline_at": {"type": "string", "format": "date-time"},
+    "authorization": {
+      "type": "object",
+      "required": ["authorization_id", "source_authorization_id", "scenario_id", "replay_order", "mandate_id", "profile_id", "card_id", "initiator_type", "merchant", "timestamp", "amount", "currency", "billing_amount_chf", "items_subtotal", "delivery_fee", "channel", "customer_device_id", "authority_status", "card_status_at_attempt", "spend_in_period_before_chf", "recent_attempt_count_10m", "fulfillment_method", "delivery_by", "order_returnable", "order_cancellable", "related_authorization_id", "related_authorization_status", "purchase_description", "items"],
+      "properties": {
+        "authorization_id": {"type": "string", "minLength": 1},
+        "source_authorization_id": {"type": "string", "minLength": 1},
+        "scenario_id": {"type": "string", "pattern": "^SCEN[0-9]{4}$"},
+        "replay_order": {"type": "integer", "minimum": 1},
+        "mandate_id": {"type": "string", "minLength": 1},
+        "profile_id": {"type": "string", "minLength": 1},
+        "card_id": {"type": "string", "minLength": 1},
+        "initiator_type": {"const": "agent"},
+        "merchant": {"$ref": "#/$defs/merchant"},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "amount": {"type": "number", "exclusiveMinimum": 0},
+        "currency": {"type": "string", "enum": ["CHF", "EUR", "GBP", "USD"]},
+        "billing_amount_chf": {"type": "number", "exclusiveMinimum": 0},
+        "items_subtotal": {"type": "number", "exclusiveMinimum": 0},
+        "delivery_fee": {"type": "number", "minimum": 0},
+        "channel": {"type": "string", "enum": ["ecommerce", "in_store", "mobile_wallet", "recurring", "atm"]},
+        "customer_device_id": {"type": "string"},
+        "authority_status": {"type": "string", "enum": ["active", "revoked", "expired"]},
+        "card_status_at_attempt": {"type": "string", "enum": ["active", "blocked"]},
+        "spend_in_period_before_chf": {"type": ["number", "null"], "minimum": 0},
+        "recent_attempt_count_10m": {"type": "integer", "minimum": 0},
+        "fulfillment_method": {"type": "string", "minLength": 1},
+        "delivery_by": {"type": ["string", "null"], "format": "date"},
+        "order_returnable": {"type": "string", "enum": ["true", "false", "unknown", "not_applicable"]},
+        "order_cancellable": {"type": "string", "enum": ["true", "false", "unknown", "not_applicable"]},
+        "related_authorization_id": {"type": ["string", "null"]},
+        "related_authorization_status": {"type": ["string", "null"], "enum": ["pending", "approved", "declined", "cancelled", null]},
+        "purchase_description": {"type": "string", "minLength": 1},
+        "items": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/item"}}
+      },
+      "additionalProperties": false
+    },
+    "mandate": {
+      "type": "object",
+      "required": ["mandate_id", "status", "customer_id", "card_id", "instruction", "hard_rules", "uncertainty_policy", "profile_id"],
+      "properties": {
+        "mandate_id": {"type": "string", "minLength": 1},
+        "status": {"type": "string", "enum": ["active", "superseded", "revoked", "expired"]},
+        "customer_id": {"type": "string", "minLength": 1},
+        "card_id": {"type": "string", "minLength": 1},
+        "instruction": {"type": "string", "minLength": 1},
+        "hard_rules": {"type": "array", "items": {"$ref": "#/$defs/mandate_rule"}},
+        "uncertainty_policy": {"type": "string", "enum": ["ask", "decline", "approve"]},
+        "profile_id": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "context": {
+      "type": "object",
+      "required": ["approved_spend_in_period_chf", "recent_authorizations"],
+      "properties": {
+        "approved_spend_in_period_chf": {"type": ["number", "null"], "minimum": 0},
+        "recent_authorizations": {"type": "array", "items": {"$ref": "#/$defs/recent_authorization"}}
+      },
+      "additionalProperties": false
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["received_at", "history_window_minutes", "context_basis"],
+      "properties": {
+        "received_at": {"type": "string", "format": "date-time"},
+        "history_window_minutes": {"type": "integer", "minimum": 1},
+        "context_basis": {"const": "run_decisions_and_scenario_timestamps"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "recent_authorization": {
+      "type": "object",
+      "required": ["authorization_id", "timestamp", "merchant_id", "billing_amount_chf", "status"],
+      "properties": {
+        "authorization_id": {"type": "string", "minLength": 1},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "merchant_id": {"type": "string", "minLength": 1},
+        "billing_amount_chf": {"type": "number", "minimum": 0},
+        "status": {"type": "string", "enum": ["approved", "declined", "pending", "cancelled"]}
+      },
+      "additionalProperties": false
+    },
+    "merchant": {
+      "type": "object",
+      "required": ["merchant_id", "merchant_name", "merchant_category", "merchant_mcc", "merchant_country", "merchant_city", "availability", "recurring_capable"],
+      "properties": {
+        "merchant_id": {"type": "string", "minLength": 1},
+        "merchant_name": {"type": "string", "minLength": 1},
+        "merchant_category": {"type": "string", "minLength": 1},
+        "merchant_mcc": {"type": "string", "pattern": "^[0-9]{4}$"},
+        "merchant_country": {"type": "string", "pattern": "^[A-Z]{2}$"},
+        "merchant_city": {"type": "string", "minLength": 1},
+        "availability": {"type": "string", "enum": ["online", "store", "store_and_online", "atm"]},
+        "recurring_capable": {"type": "string", "enum": ["true", "false"]}
+      },
+      "additionalProperties": false
+    },
+    "item": {
+      "type": "object",
+      "required": ["line_no", "item_id", "item_name", "item_category", "quantity", "unit_price", "currency", "item_details"],
+      "properties": {
+        "line_no": {"type": "integer", "minimum": 1},
+        "item_id": {"type": "string", "minLength": 1},
+        "item_name": {"type": "string", "minLength": 1},
+        "item_category": {"type": "string", "minLength": 1},
+        "quantity": {"type": "integer", "minimum": 1},
+        "unit_price": {"type": "number", "exclusiveMinimum": 0},
+        "currency": {"type": "string", "enum": ["CHF", "EUR", "GBP", "USD"]},
+        "item_details": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "mandate_rule": {
+      "type": "object",
+      "required": ["field", "operator", "value"],
+      "properties": {
+        "field": {"type": "string", "minLength": 1},
+        "operator": {"type": "string", "enum": ["<", "<=", "=", "!=", ">", ">=", "in", "not_in"]},
+        "value": {"anyOf": [{"type": "integer"}, {"type": "number"}, {"type": "string"}, {"type": "array", "items": {"type": "string"}}]},
+        "currency": {"type": ["string", "null"], "enum": ["CHF", "EUR", "GBP", "USD", null]},
+        "scope": {"type": ["string", "null"], "enum": ["purchase", "period", null]},
+        "period_days": {"type": ["integer", "null"], "minimum": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

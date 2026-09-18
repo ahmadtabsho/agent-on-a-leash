@@ -6,6 +6,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 DEFAULT_BASE_URL = (
     "https://saw26api.ashyground-364e1d07.switzerlandnorth.azurecontainerapps.io"
 )
@@ -37,6 +39,10 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> Settings:
+        # Load .env here rather than only at the CLI entry point. The control
+        # API, the worker and any script all read settings through this, and a
+        # key that loads for one caller but not another is worse than no key.
+        load_dotenv(REPO_ROOT / ".env")
         return cls(
             base_url=os.environ.get("LEASH_BASE_URL", DEFAULT_BASE_URL).rstrip("/"),
             api_key=os.environ.get("TEAM_API_KEY") or None,

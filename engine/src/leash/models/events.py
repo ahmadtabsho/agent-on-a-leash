@@ -280,14 +280,29 @@ class Envelope(Strict):
     """The poll response wrapping one event.
 
     Keep it for run tracking; validate `data` as the event.
+
+    `event_id` is an integer on the live service, which the written contract
+    does not state — it is the cursor `/v1/events?since=` pages through. Both
+    forms are accepted because this field is an opaque tracking value and no
+    decision reads it; being strict here would reject a valid purchase over
+    bookkeeping.
+
+    Extra keys are allowed so a field the platform adds later does not stop a
+    run, and `delivery_count` is captured explicitly because a value above one
+    means this purchase has been handed to us before.
     """
 
     run_id: str = Field(min_length=1)
-    event_id: str = Field(min_length=1)
+    event_id: int | str
     type: str = Field(min_length=1)
     authorization_id: str = Field(min_length=1)
     status: str = Field(min_length=1)
     occurred_at: Timestamp
     data: AuthorizationEvent
+    delivery_count: int | None = Field(default=None, ge=1)
 
     model_config = ConfigDict(strict=True, extra="allow", frozen=True)
+
+    @property
+    def is_redelivery(self) -> bool:
+        return bool(self.delivery_count and self.delivery_count > 1)

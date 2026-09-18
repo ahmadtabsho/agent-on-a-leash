@@ -42,6 +42,8 @@ class LiveRun:
     run_id: str | None = None
     stats: WorkerStats | None = None
     pending: list = dc_field(default_factory=list)
+    lapsed: list = dc_field(default_factory=list)
+    human_timeout_seconds: float | None = None
     progress: dict = dc_field(default_factory=dict)
     steps: list[tuple[str, str]] = dc_field(default_factory=list)
 
@@ -93,14 +95,22 @@ def execute(
     # The worker exists before the run does, so nothing is queued while we are
     # still setting up.
     worker = Worker(client, engine, RunState(), log_path=log_path)
-    live.note("worker", "ready to receive")
+    live.human_timeout_seconds = worker.adopt_timeouts()
+    window = (
+        f"; the customer has {live.human_timeout_seconds:.0f}s to answer anything we pause"
+        if live.human_timeout_seconds
+        else ""
+    )
+    live.note("worker", f"ready to receive{window}")
 
     started = client.start_run(live.scenario_id, live.mandate_id)
     live.run_id = started.get("run_id") or started.get("data", {}).get("run_id")
     live.note("run", f"{live.scenario_id} started as {live.run_id}")
 
     live.stats = worker.run_until_idle(wait=wait, max_empty_polls=max_empty_polls)
+    worker.sweep_expired()
     live.pending = list(worker.pending.values())
+    live.lapsed = list(worker.lapsed.values())
 
     if live.run_id:
         try:
@@ -119,6 +129,8 @@ def resolve_pending(live: LiveRun, authorization_id: str, decision: Decision, me
     worker: Worker = getattr(live, "_worker", None)
     if worker is None:
         raise RuntimeError("no worker on this run; call execute() first")
+    worker.sweep_expired()
     response = worker.resolve(authorization_id, decision, message)
     live.pending = list(worker.pending.values())
+    live.lapsed = list(worker.lapsed.values())
     return response

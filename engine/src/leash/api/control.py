@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from dataclasses import field as dc_field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,6 +28,10 @@ from ..replay import DecisionLog, DecisionRecord, EventBuilder
 
 ENGINE = DecisionEngine()
 BUILDER = EventBuilder()
+
+# The customer's window to answer a paused purchase. The live service reports
+# 120 seconds; this mirrors it so the interface can show a truthful countdown.
+HUMAN_TIMEOUT_SECONDS = 120.0
 
 
 # --- session ---------------------------------------------------------------
@@ -58,6 +62,7 @@ class Session:
     compiled: CompiledPolicy | None = None
     runs: dict[str, dict] = dc_field(default_factory=dict)
     pending: dict[str, dict] = dc_field(default_factory=dict)
+    lapsed: dict[str, dict] = dc_field(default_factory=dict)
     log: DecisionLog = dc_field(default_factory=DecisionLog)
 
 
@@ -294,6 +299,11 @@ def start_run(scenario_id: str) -> dict:
         }
         steps.append(step)
         if verdict.decision is Decision.STEP_UP:
+            raised = datetime.now(timezone.utc)
+            step["raised_at"] = raised.isoformat().replace("+00:00", "Z")
+            step["expires_at"] = (
+                raised + timedelta(seconds=HUMAN_TIMEOUT_SECONDS)
+            ).isoformat().replace("+00:00", "Z")
             SESSION.pending[auth.authorization_id] = step
 
     SESSION.runs[scenario_id] = {
@@ -329,15 +339,55 @@ def read_run(scenario_id: str) -> dict:
 # --- the step-up inbox -----------------------------------------------------
 
 
+def _sweep_lapsed() -> list[dict]:
+    """Move purchases whose window closed out of the inbox.
+
+    Nothing is sent anywhere. A decline submitted because nobody replied would
+    be recorded as the customer's decision, which they never made. Lapsing is
+    the absence of an answer, not an answer.
+    """
+    now = datetime.now(timezone.utc)
+    moved = []
+    for authorization_id, step in list(SESSION.pending.items()):
+        expires = step.get("expires_at")
+        if not expires:
+            continue
+        if datetime.fromisoformat(expires.replace("Z", "+00:00")) <= now:
+            step["lapsed"] = True
+            SESSION.lapsed[authorization_id] = SESSION.pending.pop(authorization_id)
+            moved.append(step)
+    return moved
+
+
 @app.get("/api/pending")
 def list_pending() -> dict:
-    """Purchases paused for the customer."""
-    return {"pending": list(SESSION.pending.values())}
+    """Purchases paused for the customer, with the time they have left."""
+    _sweep_lapsed()
+    now = datetime.now(timezone.utc)
+    pending = []
+    for step in SESSION.pending.values():
+        left = None
+        if step.get("expires_at"):
+            expires = datetime.fromisoformat(step["expires_at"].replace("Z", "+00:00"))
+            left = max(0.0, (expires - now).total_seconds())
+        pending.append({**step, "seconds_left": left})
+    return {
+        "pending": pending,
+        "lapsed": list(SESSION.lapsed.values()),
+        "human_timeout_seconds": HUMAN_TIMEOUT_SECONDS,
+    }
 
 
 @app.post("/api/pending/{authorization_id}/resolve")
 def resolve_pending(authorization_id: str, body: ResolveIn) -> dict:
     """The customer's own answer. Only they can give it."""
+    _sweep_lapsed()
+    if authorization_id in SESSION.lapsed:
+        raise HTTPException(
+            410,
+            "You were asked about this purchase and the window has closed. "
+            "It was never approved, and nothing was answered on your behalf.",
+        )
     if authorization_id not in SESSION.pending:
         raise HTTPException(404, "Nothing is waiting on you for that purchase.")
     try:

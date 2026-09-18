@@ -165,17 +165,20 @@ real deadline pressure.
 > First thing on event day: `make health`, then `make worker` against
 > `SCEN0000`, before anything else.
 
-**The control session is in-memory.**
+**The control session is in-memory.** *(Now the top remaining gap.)*
 `api/control.py` holds a module-global `SESSION`. Restart the API and the
 policy and the inbox are gone. The decision *journal* survives — it is on disk
 and append-only — but nothing reloads the session from it. Fine for a demo,
 bad for a demo you restart halfway through.
 
-**The worker never resolves a step-up on its own.**
-The engine pauses a purchase and queues it for a person, but the platform's
-human window is **120 seconds** and nothing watches that clock. If the customer
-does not answer, the purchase expires silently. There is no timeout policy and
-no fallback decision.
+**~~The worker never resolves a step-up on its own.~~** *(Built.)*
+The window is read from `/v1/bootstrap` rather than assumed, every paused
+purchase carries its own deadline, and a sweep runs on each poll. Nothing is
+sent when a window lapses, and that is deliberate: the guide forbids inventing
+a human answer, and measuring the live service showed it already moves an
+unanswered purchase from `awaiting_customer` to `timed_out` by itself at
+exactly 120 seconds. Anything we submitted would have overwritten that with a
+decision nobody made.
 
 ### Would be noticed by a judge
 
@@ -217,8 +220,8 @@ query, not a dict built at startup.
 
 If picking two, these are the two most likely to cause a problem live:
 
-1. **Step-up timeout policy** — decide what happens when the 120-second human
-   window expires, and implement it in `worker/loop.py`.
-2. **Session persistence** — rebuild `control.py`'s session from the decision
+1. **Session persistence** — rebuild `control.py`'s session from the decision
    journal on startup. `replay/log.py` already has `rebuild_state()`; the
    mandate and inbox need the same treatment.
+2. **`GET /v1/events` reconciliation** — recover cleanly from a network drop
+   mid-run rather than relying on redelivery alone.

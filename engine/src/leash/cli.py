@@ -107,11 +107,52 @@ def cmd_policy(args: argparse.Namespace) -> int:
     return 0
 
 
+MARK = {"approve": "approve ", "decline": "DECLINE ", "step_up": "ASK      "}
+
+
+def cmd_replay(args: argparse.Namespace) -> int:
+    """Replay scenarios offline and show every decision with its reasons."""
+    from .replay import EventBuilder, replay_scenario
+
+    builder = EventBuilder()
+    targets = [args.scenario] if args.scenario else builder.scenario_ids()
+    slowest = 0.0
+
+    for scenario_id in targets:
+        report = replay_scenario(scenario_id, builder=builder)
+        slowest = max(slowest, report.slowest_ms)
+        print(f"\n{'=' * 96}")
+        print(f"{scenario_id}  {report.replay.scenario_name}")
+        print(f'  "{report.replay.cardholder_instruction}"')
+        print()
+        for step in report.steps:
+            auth, verdict = step.event.authorization, step.verdict
+            print(
+                f"  {MARK[verdict.decision.value]} #{auth.replay_order:<2} "
+                f"{auth.source_authorization_id}  CHF {auth.billing_amount_chf!s:>7}  "
+                f"{auth.merchant.merchant_name[:20]:<20} {verdict.elapsed_ms:5.2f}ms"
+            )
+            print(f"      {verdict.customer_message}")
+            if args.evidence:
+                for finding in verdict.findings:
+                    if finding.outcome.value != "pass":
+                        print(f"        [{finding.outcome.value}] {finding.code}: {finding.detail}")
+        counts = report.counts
+        print(
+            f"\n  {counts['approve']} approved, {counts['decline']} declined, "
+            f"{counts['step_up']} sent to the customer"
+        )
+
+    print(f"\nSlowest decision: {slowest:.2f} ms (the platform allows 8000 ms).")
+    return 0
+
+
 COMMANDS = {
     "check": cmd_check,
     "health": cmd_health,
     "validate": cmd_validate,
     "policy": cmd_policy,
+    "replay": cmd_replay,
 }
 
 
@@ -123,6 +164,9 @@ def main(argv: list[str] | None = None) -> int:
         parser_ = sub.add_parser(name, help=(fn.__doc__ or "").strip().splitlines()[0])
         if name == "validate":
             parser_.add_argument("paths", nargs="+", help="JSON event or envelope files")
+        if name == "replay":
+            parser_.add_argument("--scenario", help="one scenario id; default is all")
+            parser_.add_argument("--evidence", action="store_true", help="show every finding")
         if name == "policy":
             parser_.add_argument("instruction", nargs="?", help="the customer's own words")
             parser_.add_argument("--scenario", default="SCEN0000", help="use a catalogue instruction")

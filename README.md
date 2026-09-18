@@ -54,7 +54,7 @@ These are the constraints the challenge grades on, and they shape every module:
 | 1 | Repo skeleton, vendored data pack | done |
 | 2 | Domain model and event parser | done |
 | 3 | Policy compiler (instruction to rules) | done |
-| 4 | Decision engine | todo |
+| 4 | Decision engine | done |
 | 5 | Offline replay harness | todo |
 | 6 | Sandbox API client and worker | todo |
 | 7 | Control UI | todo |
@@ -77,6 +77,13 @@ instruction compiles to:
 .venv/bin/leash validate path/to/event.json
 .venv/bin/leash policy "Buy groceries under CHF 50. Ask me when uncertain."
 .venv/bin/leash policy --scenario SCEN0002 --json
+```
+
+Replay every supplied scenario offline, with no network and no API key:
+
+```bash
+.venv/bin/leash replay                          # all 45 attempts
+.venv/bin/leash replay --scenario SCEN0004 --evidence
 ```
 
 The hosted sandbox needs no key for its health probe:

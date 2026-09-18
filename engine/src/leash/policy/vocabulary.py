@@ -35,10 +35,27 @@ class FieldSpec:
     resolution: Resolution
     kind: str  # "money" | "number" | "string" | "term"
     description: str
+    escalates_on_breach: bool = False
+    """A breach here brings the purchase to the customer instead of declining it.
+
+    Reserved for fields that are an *inference* rather than a fact. Whether
+    someone other than the cardholder is driving a session is never something
+    the evidence settles — an unfamiliar device is a new laptop as often as it
+    is an intruder. Declining on an inference blocks ordinary shopping, which
+    the brief counts as a failure just as it counts letting a bad purchase
+    through. Customers phrase these as "pause", and pausing is what it does.
+    """
 
 
-def _spec(name: str, resolution: Resolution, kind: str, description: str) -> FieldSpec:
-    return FieldSpec(name, resolution, kind, description)
+def _spec(
+    name: str,
+    resolution: Resolution,
+    kind: str,
+    description: str,
+    *,
+    escalates_on_breach: bool = False,
+) -> FieldSpec:
+    return FieldSpec(name, resolution, kind, description, escalates_on_breach)
 
 
 FIELDS: dict[str, FieldSpec] = {
@@ -167,6 +184,7 @@ FIELDS: dict[str, FieldSpec] = {
             "string",
             "Session signal from device novelty, velocity and country: "
             "normal, degraded, or unknown.",
+            escalates_on_breach=True,
         ),
     ]
 }

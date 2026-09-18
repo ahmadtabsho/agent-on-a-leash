@@ -125,5 +125,6 @@ make health
 | --- | --- |
 | [docs/build-log.html](docs/build-log.html) | The short version: what was built, what broke, what is still open. Also at <https://claude.ai/artifact/M86MXuuuDzosJKDHQBHZMT> (private). |
 | [docs/pipeline.html](docs/pipeline.html) | The full walkthrough: the seven stages, the traps each one prevents, the bugs found, and what is still open. Also published at <https://claude.ai/artifact/9zgVZWPAdzvjm9gnNkUeso> (private). |
+| [docs/code-map.md](docs/code-map.md) | What calls what, one decision traced end to end, and an ordered list of what is still missing. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | How a decision is produced, in brief. |
 | [docs/challenge/](docs/challenge/) | The upstream brief and API contract, unmodified. |

@@ -393,10 +393,10 @@
     <h1>Agent on a Leash</h1>
     <p class="standfirst">A trust and control layer that decides whether an AI shopping agent may spend a customer&rsquo;s money &mdash; and explains itself every time it does.</p>
     <dl class="figures">
-      <div class="figure"><dt>Purchases replayed</dt><dd>45</dd></div>
-      <div class="figure"><dt>Slowest decision</dt><dd>0.97<small> ms</small></dd></div>
+      <div class="figure"><dt>Purchases, live</dt><dd>45</dd></div>
+      <div class="figure"><dt>Slowest, live</dt><dd>2.88<small> ms</small></dd></div>
       <div class="figure"><dt>Deadline allowed</dt><dd>8000<small> ms</small></dd></div>
-      <div class="figure"><dt>Tests</dt><dd>207</dd></div>
+      <div class="figure"><dt>Tests</dt><dd>259</dd></div>
       <div class="figure"><dt>Model calls required</dt><dd>0</dd></div>
     </dl>
   </header>
@@ -717,7 +717,8 @@ derived.requested_item_match              =   "match"</code></pre>
     <section id="results">
       <p class="kicker">07 &mdash; What it decides</p>
       <h2 class="head">All 45 purchases, replayed offline</h2>
-      <p class="lede">No network, no API key, no answer key &mdash; the pack ships none, and deciding from a scenario&rsquo;s name or position is explicitly forbidden. A test rewrites <code>scenario_id</code>, <code>request_id</code> and <code>replay_order</code> and asserts the decisions are unchanged.</p>
+      <p class="lede">These now run against the <strong>live sandbox</strong> as well as offline, and the counts are identical either way &mdash; which is the strongest evidence available that the engine is deterministic and that the offline harness is faithful.</p>
+      <p>No answer key exists: the pack ships none, and deciding from a scenario&rsquo;s name or position is explicitly forbidden. A test rewrites <code>scenario_id</code>, <code>request_id</code> and <code>replay_order</code> and asserts the decisions are unchanged.</p>
 
       <div class="scroll">
         <table>
@@ -866,11 +867,11 @@ make worker    <span class="cm"># long-poll the sandbox and answer every purchas
       <h2 class="head">What is honestly still open</h2>
 
       <ul>
-        <li><strong>Nothing has touched the live API.</strong> Every keyed endpoint is written and unit-tested against a scripted transport, but the team key arrives on the event day. <code>/healthz</code> is the only endpoint actually exercised against the running service.</li>
-        <li><strong>The control session is in-memory.</strong> Fine for a prototype and a demo; a real deployment needs the mandate and the inbox in a store that survives a restart. The decision journal already does.</li>
-        <li><strong>Familiarity uses one prior purchase as its threshold.</strong> That is the reading that does not invent a relationship the history does not show &mdash; and the compiler asks the customer to set it properly rather than leaving it to us.</li>
+        <li><strong>Two numbers are judgements, not measurements</strong> &mdash; merchant familiarity at one prior approved purchase, and a three-hour duplicate window. Both hold on the supplied data; neither is derived from anything, and the compiler explicitly asks the customer to set the first.</li>
+        <li><strong><code>GET /v1/events</code> is unused.</strong> The client method exists but nothing calls it. It would matter for reconciling a run after a network drop, rather than relying on redelivery alone.</li>
         <li><strong>The advisor has never called a real model.</strong> It is off by default and every failure path is tested; the happy path against a live endpoint is not.</li>
-        <li><strong>Duplicate detection has one tunable</strong> &mdash; a three-hour window. It catches the repeated basket in the pack and lets the legitimate re-quote through, but the number is a judgement, not a measurement.</li>
+        <li><strong>The regex compiler covers the phrasings we anticipated.</strong> The mitigation is that every extracted rule is shown back before confirmation, so a bad reading is visible rather than silent &mdash; but it remains the weakest link.</li>
+        <li><strong>No interface for adding a brand-new rule.</strong> The API supports tightening with <code>add_rules</code>; the UI only exposes the one-click &ldquo;refuse when unsure&rdquo;.</li>
       </ul>
     </section>
 
@@ -878,7 +879,7 @@ make worker    <span class="cm"># long-poll the sandbox and answer every purchas
 
   <footer>
     <span>leash/0.1.0</span>
-    <span>207 tests &middot; 45 purchases &middot; 0.97 ms slowest</span>
+    <span>259 tests &middot; 45 purchases live &middot; 2.88 ms slowest</span>
     <span>github.com/ahmadtabsho/agent-on-a-leash</span>
   </footer>
 

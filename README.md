@@ -73,6 +73,13 @@ These are the constraints the challenge grades on, and they shape every module:
 | 7 | Control UI | done |
 | 8 | LLM assist with fallback | done |
 | 9 | Demo script and architecture doc | done |
+| 10 | One-command live run (`leash run`) | done |
+| 11 | Step-up timeout and countdown | done |
+| 12 | Session persistence | done |
+
+Running live against the Viseca sandbox: all 45 purchases answered, 17 approved,
+23 declined, 5 brought to the customer. Zero parse failures, zero missed
+deadlines, slowest decision 2.88 ms against an 8,000 ms budget.
 
 ## Getting started
 

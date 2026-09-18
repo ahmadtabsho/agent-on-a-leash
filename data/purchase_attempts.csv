@@ -1,0 +1,46 @@
+authorization_id,scenario_id,replay_order,authority_id,card_id,merchant_id,timestamp,amount,currency,billing_amount_chf,items_subtotal,delivery_fee,channel,customer_device_id,authority_status,card_status_at_attempt,spend_in_period_before_chf,recent_attempt_count_10m,fulfillment_method,delivery_by,order_returnable,order_cancellable,related_authorization_id,related_authorization_status,purchase_description
+AU0001,SCEN0000,1,AUTH0001,CA0001,ME0001,2026-08-09T10:04:00Z,20.00,CHF,20.00,13.00,7.00,ecommerce,DVC-13A598,active,active,,0,delivery,2026-08-10,false,unknown,,,Grocery delivery order
+AU0002,SCEN0001,1,AUTH0002,CA0001,ME0001,2026-08-10T09:12:00Z,44.50,CHF,44.50,38.50,6.00,ecommerce,DVC-13A598,active,active,,0,delivery,2026-08-11,false,unknown,,,Household grocery delivery
+AU0003,SCEN0001,2,AUTH0002,CA0001,ME0001,2026-08-11T18:35:00Z,120.00,CHF,120.00,114.00,6.00,ecommerce,DVC-13A598,active,active,,0,delivery,2026-08-12,false,unknown,,,Household grocery delivery
+AU0004,SCEN0001,3,AUTH0002,CA0001,ME0001,2026-08-12T10:05:00Z,126.00,CHF,126.00,118.00,8.00,ecommerce,DVC-13A598,active,active,,0,delivery,2026-08-13,false,unknown,,,Household grocery delivery
+AU0005,SCEN0001,4,AUTH0002,CA0001,ME0001,2026-08-13T17:20:00Z,70.00,CHF,70.00,64.00,6.00,ecommerce,DVC-13A598,active,active,,0,delivery,2026-08-14,false,unknown,,,Household grocery delivery
+AU0006,SCEN0001,5,AUTH0002,CA0001,ME0001,2026-08-13T17:26:00Z,65.00,CHF,65.00,59.00,6.00,ecommerce,DVC-13A598,active,active,,1,delivery,2026-08-14,false,unknown,,,Household grocery delivery
+AU0007,SCEN0001,6,AUTH0002,CA0001,ME0001,2026-08-14T11:40:00Z,62.00,CHF,62.00,56.00,6.00,ecommerce,DVC-13A598,active,active,,0,delivery,2026-08-15,false,unknown,,,Household grocery delivery
+AU0008,SCEN0001,7,AUTH0002,CA0001,ME0001,2026-08-15T09:30:00Z,65.50,CHF,65.50,59.50,6.00,ecommerce,DVC-13A598,active,active,,0,delivery,2026-08-16,false,unknown,,,Household grocery delivery
+AU0009,SCEN0001,8,AUTH0002,CA0001,ME0001,2026-08-16T16:10:00Z,24.00,CHF,24.00,18.00,6.00,ecommerce,DVC-13A598,active,active,,0,delivery,2026-08-17,false,unknown,,,Household grocery delivery
+AU0010,SCEN0001,9,AUTH0002,CA0001,ME0001,2026-08-18T10:00:00Z,138.00,CHF,138.00,130.00,8.00,ecommerce,DVC-13A598,active,active,,0,delivery,2026-08-19,false,unknown,,,Household grocery delivery
+AU0011,SCEN0001,10,AUTH0002,CA0001,ME0001,2026-08-19T09:45:00Z,88.00,CHF,88.00,82.00,6.00,ecommerce,DVC-13A598,active,active,,0,delivery,2026-08-20,false,unknown,,,Household grocery delivery
+AU0012,SCEN0002,1,AUTH0003,CA0011,ME0028,2026-08-11T10:15:00Z,165.00,CHF,165.00,165.00,0.00,ecommerce,DVC-89CB09,active,active,,0,delivery,,true,unknown,,,Running shoes order
+AU0013,SCEN0002,2,AUTH0003,CA0011,ME0028,2026-08-11T14:40:00Z,155.00,CHF,155.00,155.00,0.00,ecommerce,DVC-89CB09,active,active,,0,delivery,,true,unknown,,,Running shoes order
+AU0014,SCEN0002,3,AUTH0003,CA0011,ME0028,2026-08-12T09:05:00Z,145.00,CHF,145.00,145.00,0.00,ecommerce,DVC-89CB09,active,active,,0,delivery,,false,unknown,,,Running shoes order
+AU0015,SCEN0002,4,AUTH0003,CA0011,ME0028,2026-08-12T16:30:00Z,158.00,CHF,158.00,158.00,0.00,ecommerce,DVC-89CB09,active,active,,0,delivery,,true,unknown,,,Running shoes order
+AU0016,SCEN0002,5,AUTH0003,CA0011,ME0028,2026-08-13T11:20:00Z,175.00,CHF,175.00,175.00,0.00,ecommerce,DVC-89CB09,active,active,,0,delivery,,unknown,unknown,,,Running shoes order
+AU0017,SCEN0002,6,AUTH0003,CA0011,ME0028,2026-08-14T10:00:00Z,180.00,CHF,180.00,180.00,0.00,ecommerce,DVC-89CB09,active,active,,0,delivery,,true,unknown,,,Running shoes order
+AU0018,SCEN0002,7,AUTH0003,CA0011,ME0028,2026-08-14T15:45:00Z,194.00,CHF,194.00,194.00,0.00,ecommerce,DVC-89CB09,active,active,,0,delivery,,true,unknown,,,Running shoes order
+AU0019,SCEN0002,8,AUTH0003,CA0011,ME0028,2026-08-15T09:30:00Z,168.00,CHF,168.00,168.00,0.00,ecommerce,DVC-89CB09,active,active,,0,delivery,,true,unknown,,,Running shoes order
+AU0020,SCEN0002,9,AUTH0003,CA0011,ME0028,2026-08-16T13:10:00Z,120.00,CHF,120.00,120.00,0.00,ecommerce,DVC-89CB09,active,active,,0,delivery,,true,unknown,,,Running shoes order
+AU0021,SCEN0002,10,AUTH0003,CA0011,ME0028,2026-08-17T11:00:00Z,215.00,CHF,215.00,215.00,0.00,ecommerce,DVC-89CB09,active,active,,0,delivery,,true,unknown,,,Running shoes order
+AU0022,SCEN0002,11,AUTH0003,CA0011,ME0053,2026-08-18T14:25:00Z,189.00,CHF,189.00,189.00,0.00,ecommerce,DVC-89CB09,active,active,,0,delivery,,true,unknown,,,Running shoes order
+AU0023,SCEN0002,12,AUTH0003,CA0011,ME0029,2026-08-19T10:40:00Z,179.00,CHF,179.00,179.00,0.00,ecommerce,DVC-89CB09,active,active,,0,delivery,,true,unknown,,,Running shoes order
+AU0024,SCEN0003,1,AUTH0004,CA0023,ME0025,2026-08-14T18:20:00Z,145.00,CHF,145.00,145.00,0.00,ecommerce,DVC-B73E47,active,active,,0,delivery,,true,unknown,,,Clothing order
+AU0025,SCEN0003,2,AUTH0004,CA0023,ME0027,2026-08-15T12:05:00Z,199.00,EUR,189.05,199.00,0.00,ecommerce,DVC-B73E47,active,active,,0,delivery,,true,unknown,,,Clothing order
+AU0026,SCEN0003,3,AUTH0004,CA0023,ME0025,2026-08-17T19:40:00Z,165.00,CHF,165.00,165.00,0.00,ecommerce,DVC-4C0E9B,active,active,,0,delivery,,true,unknown,,,Clothing order
+AU0027,SCEN0003,4,AUTH0004,CA0023,ME0026,2026-08-18T02:14:00Z,232.00,CHF,232.00,232.00,0.00,ecommerce,DVC-4C0E9B,active,active,,0,delivery,,true,unknown,,,Clothing order
+AU0028,SCEN0003,5,AUTH0004,CA0023,ME0058,2026-08-18T02:17:00Z,245.00,CHF,245.00,245.00,0.00,ecommerce,DVC-4C0E9B,active,active,,1,delivery,,true,unknown,,,Clothing order
+AU0029,SCEN0003,6,AUTH0004,CA0023,ME0060,2026-08-18T02:21:00Z,219.00,GBP,245.28,219.00,0.00,ecommerce,DVC-4C0E9B,active,active,,2,delivery,,true,unknown,,,Clothing order
+AU0030,SCEN0003,7,AUTH0004,CA0023,ME0058,2026-08-18T02:24:00Z,248.00,CHF,248.00,248.00,0.00,ecommerce,DVC-4C0E9B,active,active,,3,delivery,,true,unknown,,,Clothing order
+AU0031,SCEN0003,8,AUTH0004,CA0023,ME0025,2026-08-19T17:30:00Z,95.00,CHF,95.00,95.00,0.00,ecommerce,DVC-B73E47,active,active,,0,delivery,,true,unknown,,,Clothing order
+AU0032,SCEN0003,9,AUTH0004,CA0023,ME0027,2026-08-20T11:15:00Z,260.00,EUR,247.00,260.00,0.00,ecommerce,DVC-B73E47,active,active,,0,delivery,,true,unknown,,,Clothing order
+AU0033,SCEN0003,10,AUTH0004,CA0023,ME0026,2026-08-21T16:00:00Z,138.00,CHF,138.00,138.00,0.00,ecommerce,DVC-B73E47,active,active,,0,delivery,,true,unknown,,,Clothing order
+AU0034,SCEN0003,11,AUTH0004,CA0023,ME0025,2026-08-22T15:20:00Z,268.00,CHF,268.00,268.00,0.00,ecommerce,DVC-B73E47,active,active,,0,delivery,,true,unknown,,,Clothing order
+AU0035,SCEN0004,1,AUTH0005,CA0039,ME0022,2026-08-12T09:40:00Z,289.00,CHF,289.00,289.00,0.00,ecommerce,DVC-785971,active,active,,0,delivery,,true,unknown,,,27-inch computer monitor
+AU0036,SCEN0004,2,AUTH0005,CA0039,ME0022,2026-08-12T10:05:00Z,289.00,CHF,289.00,289.00,0.00,ecommerce,DVC-785971,active,active,,0,delivery,,true,unknown,,,27-inch computer monitor
+AU0037,SCEN0004,3,AUTH0005,CA0039,ME0022,2026-08-12T14:05:00Z,520.00,CHF,520.00,520.00,0.00,ecommerce,DVC-785971,active,active,,0,delivery,,true,unknown,,,27-inch computer monitor
+AU0038,SCEN0004,4,AUTH0005,CA0039,ME0024,2026-08-13T16:20:00Z,450.00,USD,391.50,450.00,0.00,ecommerce,DVC-785971,active,active,,0,delivery,,true,unknown,,,27-inch computer monitor
+AU0039,SCEN0004,5,AUTH0005,CA0039,ME0059,2026-08-14T11:30:00Z,340.00,CHF,340.00,340.00,0.00,ecommerce,DVC-785971,active,active,,0,delivery,,true,unknown,,,27-inch computer monitor
+AU0040,SCEN0004,6,AUTH0005,CA0039,ME0022,2026-08-15T10:10:00Z,299.00,CHF,299.00,299.00,0.00,ecommerce,DVC-785971,active,active,,0,delivery,,true,unknown,,,27-inch computer monitor
+AU0041,SCEN0004,7,AUTH0005,CA0039,ME0022,2026-08-16T09:15:00Z,459.00,CHF,459.00,459.00,0.00,ecommerce,DVC-785971,active,active,,0,delivery,,true,unknown,,,27-inch computer monitor
+AU0042,SCEN0004,8,AUTH0005,CA0039,ME0022,2026-08-17T15:00:00Z,350.00,CHF,350.00,350.00,0.00,ecommerce,DVC-785971,active,active,,0,delivery,,true,unknown,AU0037,declined,27-inch computer monitor
+AU0043,SCEN0004,9,AUTH0005,CA0039,ME0022,2026-08-18T13:45:00Z,195.00,CHF,195.00,195.00,0.00,ecommerce,DVC-785971,active,active,,0,digital,,not_applicable,unknown,,,27-inch computer monitor
+AU0044,SCEN0004,10,AUTH0005,CA0039,ME0023,2026-08-19T10:25:00Z,310.00,CHF,310.00,310.00,0.00,ecommerce,DVC-785971,active,active,,0,delivery,,true,unknown,,,27-inch computer monitor
+AU0045,SCEN0004,11,AUTH0005,CA0039,ME0022,2026-08-20T17:05:00Z,399.90,CHF,399.90,399.90,0.00,ecommerce,DVC-785971,active,active,,0,delivery,,true,unknown,,,27-inch computer monitor

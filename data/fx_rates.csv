@@ -1,0 +1,5 @@
+from_currency,to_currency,rate,rate_date,source
+CHF,CHF,1.000000,2026-08-01,synthetic_fixed
+EUR,CHF,0.950000,2026-08-01,synthetic_fixed
+GBP,CHF,1.120000,2026-08-01,synthetic_fixed
+USD,CHF,0.870000,2026-08-01,synthetic_fixed

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/agent-on-a-leash/data-pack.schema.json",
+  "title": "Agent on a Leash hackers data pack",
+  "description": "Participant-visible synthetic source contracts and one canonical historical file. Agent provenance is a transaction field; the live mandate is the only policy object.",
+  "type": "object",
+  "required": ["pack_version", "classification", "package", "visibility", "files"],
+  "properties": {
+    "pack_version": {"type": "string"},
+    "classification": {"const": "SYNTHETIC TEST DATA"},
+    "package": {"const": "hackers"},
+    "visibility": {"const": "participant"},
+    "description": {"type": "string"},
+    "generator": {"type": "object", "additionalProperties": true},
+    "history_period": {"type": "object", "additionalProperties": true},
+    "history_profile": {
+      "type": "object",
+      "required": ["customer_count", "rows_per_customer", "purchase_attempt_rows", "agent_purchase_rows", "agent_purchase_share", "agent_outcomes"],
+      "properties": {
+        "customer_count": {"type": "integer", "minimum": 1},
+        "rows_per_customer": {
+          "type": "object",
+          "required": ["minimum", "maximum"],
+          "properties": {"minimum": {"type": "integer", "minimum": 1}, "maximum": {"type": "integer", "minimum": 1}},
+          "additionalProperties": false
+        },
+        "purchase_attempt_rows": {"type": "integer", "minimum": 0},
+        "agent_purchase_rows": {"type": "integer", "minimum": 0},
+        "agent_purchase_share": {"type": "number", "minimum": 0, "maximum": 1},
+        "agent_outcomes": {
+          "type": "object",
+          "properties": {"approved": {"type": "integer", "minimum": 0}, "declined": {"type": "integer", "minimum": 0}},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "metadata_hash_scope": {"type": "string"},
+    "privacy": {"type": "object", "additionalProperties": true},
+    "scenario_pack": {"type": "object", "additionalProperties": true},
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "format", "sha256"],
+        "properties": {
+          "path": {"type": "string"},
+          "format": {"type": "string"},
+          "rows": {"type": "integer", "minimum": 0},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "x-csv-contracts": {
+    "customers.csv": {"key": "customer_id", "foreign_keys": [], "header": ["customer_id", "persona_name", "home_region", "background", "shopping_preferences", "typical_spending", "budget_style", "travel_pattern"]},
+    "accounts.csv": {"key": "account_id", "foreign_keys": ["customer_id -> customers.customer_id"], "header": ["account_id", "customer_id", "account_type", "account_purpose", "base_currency", "status", "opened_on", "per_transaction_limit_chf", "monthly_limit_chf"]},
+    "cards.csv": {"key": "card_id", "foreign_keys": ["account_id -> accounts.account_id"], "header": ["card_id", "account_id", "card_type", "card_purpose", "status", "first_used_on", "expires_on", "online_enabled", "international_enabled", "virtual_card"]},
+    "merchants.csv": {"key": "merchant_id", "foreign_keys": [], "header": ["merchant_id", "merchant_name", "merchant_category", "merchant_mcc", "merchant_country", "merchant_city", "availability", "recurring_capable"]},
+    "scenario_authorities.csv": {"key": "authority_id", "foreign_keys": ["customer_id -> customers.customer_id", "card_id -> cards.card_id"], "header": ["authority_id", "customer_id", "card_id", "valid_from", "valid_until", "initial_status"]},
+    "scenario_catalogue.csv": {"key": "scenario_id", "foreign_keys": [], "header": ["scenario_id", "scenario_name", "cardholder_instruction", "control_question", "control_theme", "event_count", "short_rationale"]},
+    "items.csv": {"key": "item_id", "foreign_keys": [], "header": ["item_id", "item_name", "item_category", "item_description", "unit_price_min_chf", "unit_price_typical_chf", "unit_price_max_chf"]},
+    "purchase_attempts.csv": {"key": "authorization_id", "foreign_keys": ["authority_id -> scenario_authorities.authority_id", "card_id -> cards.card_id", "merchant_id -> merchants.merchant_id"], "header": ["authorization_id", "scenario_id", "replay_order", "authority_id", "card_id", "merchant_id", "timestamp", "amount", "currency", "billing_amount_chf", "items_subtotal", "delivery_fee", "channel", "customer_device_id", "authority_status", "card_status_at_attempt", "spend_in_period_before_chf", "recent_attempt_count_10m", "fulfillment_method", "delivery_by", "order_returnable", "order_cancellable", "related_authorization_id", "related_authorization_status", "purchase_description"]},
+    "purchase_attempt_items.csv": {"key": ["authorization_id", "line_no"], "foreign_keys": ["authorization_id -> purchase_attempts.authorization_id", "item_id -> items.item_id"], "header": ["authorization_id", "line_no", "item_id", "item_name", "item_category", "quantity", "unit_price", "currency", "item_details"]},
+    "fx_rates.csv": {"key": "from_currency", "foreign_keys": [], "header": ["from_currency", "to_currency", "rate", "rate_date", "source"]}
+  },
+  "x-history-file": {
+    "authorization_history.csv": {"schema": "schemas/authorization_history.schema.json", "record_type": "authorization_history", "key": "authorization_id", "one_row_per": "historical authorization", "null_encoding": "empty field", "ordering": ["timestamp", "authorization_id"]}
+  },
+  "x-currency-contract": {
+    "billing_currency": "CHF",
+    "formula": "billing_amount_chf = amount * fx_rates[from_currency]",
+    "item_catalogue_range_currency": "CHF",
+    "item_line_comparison": "purchase_attempt_items.unit_price * fx_rates[currency]",
+    "rate_date": "2026-08-01",
+    "source": "synthetic_fixed"
+  },
+  "x-enums": {
+    "team_actions": ["approve", "decline", "step_up"],
+    "platform_precheck_actions": ["platform_reject"],
+    "currencies": ["CHF", "EUR", "GBP", "USD"],
+    "historical_initiator_types": ["human", "agent", "merchant"],
+    "authority_status": ["active", "revoked", "expired"],
+    "card_status_at_attempt": ["active", "blocked"]
+  }
+}

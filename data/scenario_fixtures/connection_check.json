@@ -1,0 +1,41 @@
+{
+  "authorization": {
+    "amount": "20.00",
+    "authority_id": "AUTH0001",
+    "authority_status": "active",
+    "authorization_id": "AU0001",
+    "billing_amount_chf": "20.00",
+    "card_id": "CA0001",
+    "card_status_at_attempt": "active",
+    "channel": "ecommerce",
+    "currency": "CHF",
+    "customer_device_id": "DVC-13A598",
+    "delivery_by": "2026-08-10",
+    "delivery_fee": "7.00",
+    "fulfillment_method": "delivery",
+    "items_subtotal": "13.00",
+    "merchant_id": "ME0001",
+    "merchant_mcc": "5411",
+    "order_cancellable": "unknown",
+    "order_returnable": "false",
+    "purchase_description": "Grocery delivery order",
+    "replay_order": 1,
+    "timestamp": "2026-08-09T10:04:00Z"
+  },
+  "classification": "SYNTHETIC TEST DATA",
+  "example_id": "EX0001",
+  "items": [
+    {
+      "currency": "CHF",
+      "item_category": "groceries",
+      "item_details": "One small basket of seasonal fruit and vegetables",
+      "item_id": "IT0001",
+      "item_name": "Fresh produce selection",
+      "line_no": 1,
+      "quantity": 1,
+      "unit_price": "13.00"
+    }
+  ],
+  "pack_version": "saw26",
+  "scenario_id": "SCEN0000"
+}

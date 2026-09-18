@@ -1,0 +1,149 @@
+{
+  "classification": "SYNTHETIC TEST DATA",
+  "description": "Fictional challenge fixtures. Historical rows are simulated from persona-level behaviour with a multi-factor probabilistic authorization outcome; scenario attempts are hand-authored. The pack contains no expected decisions, risk labels, or answer key.",
+  "files": [
+    {
+      "format": "md",
+      "path": "README.md",
+      "sha256": "1445f4370b8b5b29ed7e4db275f9df1bed2a2a9b85d15a0d6b4fd38f76753daa"
+    },
+    {
+      "format": "csv",
+      "path": "accounts.csv",
+      "rows": 31,
+      "sha256": "267fd41fb1c558956c9f32af6d5f9b6855039d3027f28372b9295b461e543769"
+    },
+    {
+      "format": "csv",
+      "path": "cards.csv",
+      "rows": 41,
+      "sha256": "50acf666bce48bb1cc7c321496dafbe684c7dd6605ab13cccb8f6624e2889809"
+    },
+    {
+      "format": "csv",
+      "path": "customers.csv",
+      "rows": 20,
+      "sha256": "abd11d15d5bc463a162e7ed4483704640c482de251e31b1788205ac3d6f71e00"
+    },
+    {
+      "format": "md",
+      "path": "data_dictionary.md",
+      "sha256": "47bc88fd3870de54c04170592fbb3f59d8f89673e62210b69ccc2a4a5dc98685"
+    },
+    {
+      "format": "csv",
+      "path": "authorization_history.csv",
+      "rows": 4701,
+      "sha256": "eb562bdc579204f25870b2ab4013d15a59f90733da0ad0d80b89949f29046168"
+    },
+    {
+      "format": "json",
+      "path": "scenario_fixtures/connection_check.json",
+      "sha256": "f55527c247bc2d026a81ab77827a674a4842eadccffaf6ad658c30ca1f943981"
+    },
+    {
+      "format": "json",
+      "path": "scenario_fixtures/example_authorization_request.json",
+      "sha256": "4684ae813e30ad4f0de5c87e3a6c933c9d541dc0067fd722c5ff220998a64f68"
+    },
+    {
+      "format": "csv",
+      "path": "fx_rates.csv",
+      "rows": 4,
+      "sha256": "dcda0e834fa13671c5ae6b75df2843a44757829da08ddfc5395d6911fd4cde5b"
+    },
+    {
+      "format": "csv",
+      "path": "items.csv",
+      "rows": 66,
+      "sha256": "4702115a8afbb65b05372202eb561377877131fd118a202b408f18c5c3d149f4"
+    },
+    {
+      "format": "csv",
+      "path": "scenario_authorities.csv",
+      "rows": 5,
+      "sha256": "e16b9ca3399b382e69c76c0ec3df3906f259e5e40590262741e0cc3672c2e3ea"
+    },
+    {
+      "format": "csv",
+      "path": "merchants.csv",
+      "rows": 58,
+      "sha256": "486215f7382138ec41969338a8016ecb6cc428ec62d10d4969fd91c56c5f64de"
+    },
+    {
+      "format": "csv",
+      "path": "purchase_attempt_items.csv",
+      "rows": 56,
+      "sha256": "31c73949765bb1f3f76d4e125790064962ec8b1f4dd6bc16cb3f405ee3a11cb9"
+    },
+    {
+      "format": "csv",
+      "path": "purchase_attempts.csv",
+      "rows": 45,
+      "sha256": "3335e12e2b8be6e289a838e3db74e3e88f3262c166ae62ead5930840e228c1b0"
+    },
+    {
+      "format": "csv",
+      "path": "scenario_catalogue.csv",
+      "rows": 5,
+      "sha256": "82834634111cc1183ede31c48d4890a68fcdcd8efc61eee361a34fbd6c4bc3a4"
+    },
+    {
+      "format": "json",
+      "path": "schemas/authorization_event.schema.json",
+      "sha256": "49a5c23d17d9599a5b49f531f465ad399a018fb2c1403a8a7884dea418c25832"
+    },
+    {
+      "format": "json",
+      "path": "schemas/authorization_history.schema.json",
+      "sha256": "dc34a98467cddff5fff3fab450f75dab7efe302376ea3492739332a17e5bab60"
+    },
+    {
+      "format": "json",
+      "path": "schemas/data_pack.schema.json",
+      "sha256": "224960181a4b32b149f56b88b3fd890cc84cc66035c6a120a6100b00c024b038"
+    }
+  ],
+  "history_period": {
+    "end": "2026-07-31",
+    "start": "2025-09-01",
+    "transaction_rows": 4701
+  },
+  "history_profile": {
+    "agent_outcomes": {
+      "approved": 416,
+      "declined": 37
+    },
+    "agent_purchase_rows": 453,
+    "agent_purchase_share": 0.096,
+    "customer_count": 20,
+    "purchase_attempt_rows": 4565,
+    "rows_per_customer": {
+      "maximum": 282,
+      "minimum": 201
+    }
+  },
+  "metadata_hash_scope": "metadata.json is excluded from its own file hash list",
+  "pack_version": "saw26",
+  "package": "hackers",
+  "privacy": {
+    "contains_real_personal_data": false,
+    "contains_secrets": false,
+    "source": "authored synthetic records"
+  },
+  "scenario_pack": {
+    "actionable_event_count": 45,
+    "billing_currency": "CHF",
+    "connection_check_example": "scenario_fixtures/connection_check.json",
+    "contains_expected_decisions": false,
+    "event_schema_example": "scenario_fixtures/example_authorization_request.json",
+    "fx_rate_date": "2026-08-01",
+    "fx_rate_rows": 4,
+    "platform_precheck_event_count": 0,
+    "public_scenario_count": 5,
+    "purchase_attempt_rows": 45,
+    "runtime_event_count": 45,
+    "scenario_theme_count": 5
+  },
+  "visibility": "participant"
+}

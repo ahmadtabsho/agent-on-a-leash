@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent on a Leash - Hackathon Reference</title>
+    <style>
+        :root {
+            --primary: #0066cc;
+            --primary-dark: #004499;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f9fafb;
+            --border: #e5e7eb;
+            --text: #111827;
+            --text-light: #6b7280;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border);
+            overflow-x: auto;
+            flex-wrap: wrap;
+        }
+        
+        .nav-tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-light);
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tab:hover {
+            color: var(--primary);
+        }
+        
+        .nav-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--primary);
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        h2 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+        }
+        
+        h3 {
+            color: var(--text);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 1.2rem;
+        }
+        
+        p {
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+        
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .highlight-box {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .success-box {
+            background: #ecfdf5;
+            border-left: 4px solid var(--success);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .warning-box {
+            background: #fffbeb;
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .code-block {
+            background: #f3f4f6;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 1rem 0;
+        }
+        
+        .checklist {
+            list-style: none;
+        }
+        
+        .checklist li {
+            padding-left: 2rem;
+            position: relative;
+            margin-bottom: 0.75rem;
+        }
+        
+        .checklist li:before {
+            content: "☐";
+            position: absolute;
+            left: 0;
+            font-size: 1.2rem;
+        }
+        
+        .key-point {
+            background: #fef3c7;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+            border-left: 4px solid var(--warning);
+        }
+        
+        strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+        
+        .timestamp {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-tabs {
+                flex-direction: column;
+            }
+            
+            .nav-tab {
+                border-bottom: 2px solid transparent;
+                border-left: 3px solid transparent;
+            }
+            
+            .nav-tab.active {
+                border-left-color: var(--primary);
+                border-bottom-color: transparent;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Agent on a Leash</h1>
+            <p>Hackathon Reference Guide - Wallet Control Layer for AI Shopping Agents</p>
+        </header>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showSection(event, 'overview')">Overview</button>
+            <button class="nav-tab" onclick="showSection(event, 'objective')">Objective</button>
+            <button class="nav-tab" onclick="showSection(event, 'requirements')">Requirements</button>
+            <button class="nav-tab" onclick="showSection(event, 'architecture')">Architecture</button>
+            <button class="nav-tab" onclick="showSection(event, 'demonstration')">Demonstration</button>
+            <button class="nav-tab" onclick="showSection(event, 'technical')">Technical</button>
+            <button class="nav-tab" onclick="showSection(event, 'resources')">Resources</button>
+            <button class="nav-tab" onclick="showSection(event, 'checklist')">Checklist</button>
+        </div>
+        
+        <!-- OVERVIEW SECTION -->
+        <div id="overview" class="section active">
+            <h2>📋 Project Overview</h2>
+            
+            <h3>About Viseca</h3>
+            <p>Viseca is a leading Swiss fintech specializing in payment cards and cashless payment services. Through Viseca Card Services, it is one of Switzerland's largest issuers of Visa and Mastercard credit cards for banks and co-branding partners. Viseca Payment Services provides the technology and operational services for card payments, including transaction processing, customer service, and fraud prevention.</p>
+            
+            <p>Founded in 1999 and wholly owned by Swiss retail and cantonal banks, Viseca combines decades of payment expertise with a focus on making payments simple, secure, and convenient. Their award-winning "one" digital service gives customers convenient control over their cards and spending.</p>
+            
+            <h3>The Challenge Context</h3>
+            <p>Imagine an AI shopping assistant that can buy things with your credit card. Such agents are already a reality, enabled by new capabilities from Visa and Mastercard.</p>
+            
+            <div class="highlight-box">
+                <strong>Your Challenge:</strong> Build the trust and control layer that decides whether an AI agent may spend a customer's money.
+            </div>
+            
+            <h3>Safety Concerns to Address</h3>
+            <ul>
+                <li><strong>Spending Limits:</strong> Doesn't spend too much?</li>
+                <li><strong>Merchant Vetting:</strong> Doesn't buy from shady merchants?</li>
+                <li><strong>Intent Verification:</strong> Purchases what you actually intended?</li>
+                <li><strong>Security:</strong> Remains resilient against prompt injection attacks?</li>
+            </ul>
+            
+            <div class="timestamp">
+                Reference Guide Prepared: September 18, 2026
+            </div>
+        </div>
+        
+        <!-- OBJECTIVE SECTION -->
+        <div id="objective" class="section">
+            <h2>🎯 Challenge Objective</h2>
+            
+            <div class="success-box">
+                <strong>Build a prototype wallet control layer that decides whether an AI shopping agent may spend a customer's money.</strong>
+            </div>
+            
+            <h3>The Wallet Control System</h3>
+            <p>The wallet control layer is configured through a customer-managed wallet policy and operates independently of the AI shopping agent and its shopping instructions.</p>
+            
+            <h3>Key Workflow</h3>
+            <ol>
+                <li>Customer (card owner) sends a shopping request to the AI shopping agent</li>
+                <li>Customer separately defines the wallet policy directly with Wallet Control</li>
+                <li>AI shopping agent forwards the proposed transaction (with payment context) to Wallet Control</li>
+                <li>Wallet Control evaluates the transaction against the wallet policy</li>
+                <li>Returns a decision: <strong>approve</strong>, <strong>decline</strong>, or <strong>ask</strong> (step up for human confirmation)</li>
+                <li>This leads to the final outcome</li>
+            </ol>
+            
+            <h3>What You Build vs. What You Don't</h3>
+            <div class="two-column">
+                <div>
+                    <h4>✅ You Build:</h4>
+                    <ul>
+                        <li>The wallet control layer</li>
+                        <li>Policy interpretation logic</li>
+                        <li>Transaction evaluation</li>
+                        <li>Human escalation paths</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>❌ You Don't Build:</h4>
+                    <ul>
+                        <li>The shopping agent itself</li>
+                        <li>Payment processing</li>
+                        <li>Merchant databases</li>
+                        <li>Card authorization systems</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="key-point">
+                <strong>Key Rule:</strong> Do not hard-code decisions to scenario names, request IDs, or sequence positions. Build a flexible, policy-driven system.
+            </div>
+        </div>
+        
+        <!-- REQUIREMENTS SECTION -->
+        <div id="requirements" class="section">
+            <h2>✅ Key Requirements</h2>
+            
+            <h3>Must-Have Capabilities</h3>
+            <ul>
+                <li><strong>Policy Translation:</strong> Translate customer input (rules or natural-language wallet policy) into clear, executable permissions</li>
+                <li><strong>Policy Management:</strong> Customer can tighten, update, or revoke the wallet policy</li>
+                <li><strong>Transaction Evaluation:</strong> Evaluate each proposed transaction against the wallet policy</li>
+                <li><strong>Decision Engine:</strong> Return one of three decisions for each transaction:
+                    <ul>
+                        <li><strong>Approve:</strong> Transaction meets policy</li>
+                        <li><strong>Decline:</strong> Transaction violates policy</li>
+                        <li><strong>Ask (Step-Up):</strong> Ambiguous or unusual - escalate to human for decision</li>
+                    </ul>
+                </li>
+            </ul>
+            
+            <h3>Transparency & Auditability</h3>
+            <div class="highlight-box">
+                <strong>Judges must be able to understand:</strong>
+                <ul>
+                    <li>What the system permitted</li>
+                    <li>What evidence it considered</li>
+                    <li>Why it acted</li>
+                    <li>How the customer retained control</li>
+                </ul>
+            </div>
+            
+            <h3>Resilience Requirements</h3>
+            <ul>
+                <li>Works with supplied synthetic data and simulator</li>
+                <li>Responds within required deadline</li>
+                <li>Remains predictable if optional models or external services fail</li>
+                <li>Does not expose hard-coded scenario assumptions</li>
+            </ul>
+        </div>
+        
+        <!-- ARCHITECTURE SECTION -->
+        <div id="architecture" class="section">
+            <h2>🏗️ System Architecture</h2>
+            
+            <h3>System Overview (Deep Dive)</h3>
+            <p>Customer (card owner) sends a shopping request to the AI shopping agent and separately defines the wallet policy directly with Wallet Control. The AI shopping agent forwards the proposed transaction together with payment context to Wallet Control. Wallet Control evaluates the transaction against the wallet policy and returns a decision: approve, decline, or ask, leading to the final outcome.</p>
+            
+            <div class="highlight-box">
+                <strong>See attached architecture diagram in Github Repo for visual representation of system flow.</strong>
+            </div>
+            
+            <h3>Technical Preferences & Constraints</h3>
+            <p><strong>Viseca's Intent:</strong> Integrate control-layer configuration into the existing Viseca one mobile app, while the decision (approve/decline/ask) must meet strict latency requirements and runs in the backend.</p>
+            
+            <div class="success-box">
+                <strong>Recommended Approach:</strong> Decouple the wallet-control user interface from the engine that approves, blocks, or escalates transactions. This allows each component to be integrated, deployed, and scaled independently.
+            </div>
+            
+            <h3>Model Preferences</h3>
+            <ul>
+                <li>If language models are used in the decision path: <strong>smaller, lower-latency models are preferred</strong></li>
+                <li>Prioritize latency and reliability over model sophistication</li>
+                <li>System must function if optional models or external services fail</li>
+            </ul>
+            
+            <h3>Deployment Flexibility</h3>
+            <ul>
+                <li>Wallet-control UI integrates with Viseca one mobile app</li>
+                <li>Decision engine runs independently in backend</li>
+                <li>Each component can be deployed and scaled independently</li>
+                <li>No tight coupling between UI and decision logic</li>
+            </ul>
+        </div>
+        
+        <!-- DEMONSTRATION SECTION -->
+        <div id="demonstration" class="section">
+            <h2>🎬 Demonstration Criteria</h2>
+            
+            <h3>You Must Demonstrate</h3>
+            
+            <div class="key-point">
+                <strong>All three scenarios:</strong>
+            </div>
+            
+            <ol>
+                <li><strong>Ordinary Transaction (No Friction):</strong>
+                    <ul>
+                        <li>One straightforward transaction that completes with minimal friction</li>
+                        <li>System approves based on policy</li>
+                    </ul>
+                </li>
+                <li><strong>Ambiguous/Unsafe/Manipulated Transaction (Useful Intervention):</strong>
+                    <ul>
+                        <li>One suspicious, ambiguous, or manipulated transaction</li>
+                        <li>System detects issue and provides useful intervention</li>
+                        <li>Could be asking human for approval or declining with clear reason</li>
+                    </ul>
+                </li>
+                <li><strong>Human Approval/Rejection/Revocation Path:</strong>
+                    <ul>
+                        <li>Demonstrate the human decision path</li>
+                        <li>Show how customer approval, rejection, or revocation affects system behavior</li>
+                    </ul>
+                </li>
+            </ol>
+            
+            <h3>Judge Evaluation Criteria</h3>
+            <p>Judges need to understand:</p>
+            <ul>
+                <li>What the system permitted</li>
+                <li>What evidence it considered</li>
+                <li>Why it acted the way it did</li>
+                <li>How the customer retained control</li>
+            </ul>
+        </div>
+        
+        <!-- TECHNICAL SECTION -->
+        <div id="technical" class="section">
+            <h2>⚙️ Technical Preferences</h2>
+            
+            <h3>Architecture Decoupling</h3>
+            <p>Viseca ultimately intends to integrate control-layer configuration into the existing Viseca one mobile app, while the decision (approve/decline/ask) must meet strict latency requirements and runs in the backend.</p>
+            
+            <div class="success-box">
+                <strong>Recommendation:</strong> Decouple the wallet-control user interface from the engine that approves, blocks, or escalates transactions, allowing each component to be integrated, deployed, and scaled independently.
+            </div>
+            
+            <h3>Model Selection Strategy</h3>
+            <ul>
+                <li>If language models are used in the decision path: <strong>prefer smaller, lower-latency models</strong></li>
+                <li>Prioritize speed and reliability over sophistication</li>
+                <li>System must remain predictable if optional models fail</li>
+            </ul>
+            
+            <h3>Combine Disciplines</h3>
+            <p>Build the wallet control using a thoughtful combination of:</p>
+            <ul>
+                <li>Rules-based logic</li>
+                <li>Behavioral signals</li>
+                <li>Machine learning</li>
+                <li>Language models</li>
+                <li>Interface design</li>
+            </ul>
+        </div>
+        
+        <!-- RESOURCES SECTION -->
+        <div id="resources" class="section">
+            <h2>🛠️ Support & Resources for Hackers</h2>
+            
+            <h3>Data & APIs</h3>
+            <ul>
+                <li><strong>Synthetic Data Pack:</strong> Available on Github
+                    <ul>
+                        <li>Sample transactions</li>
+                        <li>Merchant data</li>
+                        <li>Customer scenarios</li>
+                    </ul>
+                </li>
+                <li><strong>Live API with Transactions:</strong> Available during the hackathon
+                    <ul>
+                        <li>Real transaction simulation</li>
+                        <li>Sandbox environment</li>
+                    </ul>
+                </li>
+            </ul>
+            
+            <h3>Documentation</h3>
+            <ul>
+                <li>Architecture diagram in Github Repo</li>
+                <li>API documentation</li>
+                <li>Data schema reference</li>
+            </ul>
+            
+            <h3>Getting Started</h3>
+            <ol>
+                <li>Download synthetic data pack from Github</li>
+                <li>Review architecture diagram</li>
+                <li>Set up connection to live API</li>
+                <li>Build your policy engine</li>
+                <li>Test with scenarios</li>
+            </ol>
+        </div>
+        
+        <!-- CHECKLIST SECTION -->
+        <div id="checklist" class="section">
+            <h2>✨ Solution Checklist & Progress</h2>
+            
+            <h3>Core Components</h3>
+            <ul class="checklist">
+                <li>Policy interpretation engine built</li>
+                <li>Transaction evaluation logic implemented</li>
+                <li>Decision engine (approve/decline/ask) working</li>
+                <li>Human approval/rejection path implemented</li>
+                <li>Policy update/revocation functionality ready</li>
+            </ul>
+            
+            <h3>Testing & Validation</h3>
+            <ul class="checklist">
+                <li>Tested with ordinary transaction scenario</li>
+                <li>Tested with ambiguous/suspicious transaction</li>
+                <li>Tested with human escalation path</li>
+                <li>Works with synthetic data</li>
+                <li>Connects to live API successfully</li>
+            </ul>
+            
+            <h3>Quality & Resilience</h3>
+            <ul class="checklist">
+                <li>Meets latency requirements</li>
+                <li>Works if external services fail</li>
+                <li>No hard-coded scenario assumptions</li>
+                <li>Decisions are explainable and auditable</li>
+                <li>Customer retains control over policy</li>
+            </ul>
+            
+            <h3>Demonstration Ready</h3>
+            <ul class="checklist">
+                <li>Can demonstrate ordinary transaction flow</li>
+                <li>Can demonstrate intervention scenario</li>
+                <li>Can demonstrate human decision path</li>
+                <li>Judges can understand what/why/how</li>
+                <li>Architecture diagram documented</li>
+            </ul>
+            
+            <h3>Documentation</h3>
+            <ul class="checklist">
+                <li>System architecture documented</li>
+                <li>Policy format documented</li>
+                <li>API usage examples provided</li>
+                <li>Deployment instructions ready</li>
+                <li>Demo script prepared</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        function showSection(event, sectionId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => section.classList.remove('active'));
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.nav-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+    </script>
+</body>
+</html>

@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from dataclasses import field as dc_field
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,9 +23,11 @@ from pydantic import BaseModel, Field
 
 from ..config import Settings
 from ..decision import DecisionEngine, RunState
+from ..decision.state import Recorded
 from ..models.enums import Decision, UncertaintyPolicy
 from ..policy import CompiledPolicy, compile_policy, review_amendment
 from ..replay import DecisionLog, DecisionRecord, EventBuilder
+from .store import SessionStore
 
 ENGINE = DecisionEngine()
 BUILDER = EventBuilder()
@@ -66,7 +69,67 @@ class Session:
     log: DecisionLog = dc_field(default_factory=DecisionLog)
 
 
-SESSION = Session()
+STORE = SessionStore()
+
+
+def _restore() -> Session:
+    """Rebuild the session from disk, or start a fresh one.
+
+    A restart used to leave the customer with no policy and no record that
+    anything was waiting on them, while the decisions already sent stayed on
+    the platform. Anything that cannot be read back is discarded rather than
+    half-restored.
+    """
+    payload = STORE.load()
+    session = Session()
+    if not payload:
+        return session
+
+    if payload.get("mandate"):
+        try:
+            session.mandate = Mandate(**payload["mandate"])
+        except TypeError:
+            return Session()
+
+    instruction = payload.get("instruction")
+    if instruction:
+        session.compiled = compile_policy(instruction)
+
+    session.pending = payload.get("pending") or {}
+    session.lapsed = payload.get("lapsed") or {}
+
+    # Runs come back for display. Their in-memory RunState is rebuilt from the
+    # journal below, so spending limits carry across the restart.
+    for scenario_id, run in (payload.get("runs") or {}).items():
+        session.runs[scenario_id] = {**run, "state": RunState(run_id=scenario_id)}
+
+    for entry in payload.get("journal") or []:
+        try:
+            record = DecisionRecord(**entry)
+        except TypeError:
+            continue
+        session.log.records.append(record)
+        run = session.runs.get(record.run_id)
+        if run is None:
+            continue
+        state: RunState = run["state"]
+        state.records[record.authorization_id] = Recorded(
+            authorization_id=record.authorization_id,
+            decision=Decision(record.resolved_by_customer or record.decision),
+            billing_amount_chf=Decimal(str(record.billing_amount_chf)),
+            timestamp=datetime.fromisoformat(record.purchase_timestamp.replace("Z", "+00:00")),
+            merchant_id=record.merchant_id,
+            fingerprint="",
+            awaiting_customer=(
+                record.decision == Decision.STEP_UP.value and not record.resolved_by_customer
+            ),
+        )
+    return session
+
+
+SESSION = _restore()
+
+
 
 
 def _now() -> str:
@@ -136,6 +199,8 @@ def health() -> dict:
     return {
         "status": "ok",
         "engine_version": ENGINE.config.engine_version,
+        "session_restored": SESSION.mandate is not None,
+        "session_file": str(STORE.path),
         "sandbox_base_url": settings.base_url,
         "team_key_configured": bool(settings.api_key),
         "mode": "sandbox" if settings.api_key else "offline",
@@ -174,6 +239,7 @@ def draft_policy(body: InstructionIn) -> dict:
         open_questions=policy.open_questions,
         uncertainty_policy=policy.uncertainty_policy.value,
     )
+    STORE.save(SESSION)
     return {"mandate": asdict(SESSION.mandate), "policy": _policy_payload(policy)}
 
 
@@ -187,6 +253,7 @@ def confirm_policy(body: ConfirmIn) -> dict:
     SESSION.mandate.status = "active"
     SESSION.mandate.mandate_id = SESSION.mandate.draft_id.replace("DRAFT", "TM")
     SESSION.mandate.confirmed_at = _now()
+    STORE.save(SESSION)
     return {"mandate": asdict(SESSION.mandate)}
 
 
@@ -245,6 +312,7 @@ def tighten_policy(body: TightenIn) -> dict:
     if new_policy:
         mandate.uncertainty_policy = new_policy.value
     mandate.amendments.append({"at": _now(), "notes": review.notes, "added": len(additions)})
+    STORE.save(SESSION)
     return {"mandate": asdict(mandate), "notes": review.notes}
 
 
@@ -254,6 +322,7 @@ def revoke_policy() -> dict:
     mandate = _require_active()
     mandate.status = "revoked"
     mandate.revoked_at = _now()
+    STORE.save(SESSION)
     return {"mandate": asdict(mandate)}
 
 
@@ -314,6 +383,7 @@ def start_run(scenario_id: str) -> dict:
         "counts": _counts(steps),
         "state": state,
     }
+    STORE.save(SESSION)
     return _run_payload(scenario_id)
 
 
@@ -356,6 +426,8 @@ def _sweep_lapsed() -> list[dict]:
             step["lapsed"] = True
             SESSION.lapsed[authorization_id] = SESSION.pending.pop(authorization_id)
             moved.append(step)
+    if moved:
+        STORE.save(SESSION)
     return moved
 
 
@@ -411,6 +483,7 @@ def resolve_pending(authorization_id: str, body: ResolveIn) -> dict:
         run["counts"] = _counts(run["steps"])
 
     SESSION.log.note_resolution(authorization_id, decision)
+    STORE.save(SESSION)
     return {"resolved": step, "remaining": len(SESSION.pending)}
 
 
@@ -424,6 +497,7 @@ def journal() -> dict:
 def reset_session() -> dict:
     global SESSION
     SESSION = Session()
+    STORE.clear()
     return {"reset": True}
 
 

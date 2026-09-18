@@ -165,11 +165,13 @@ real deadline pressure.
 > First thing on event day: `make health`, then `make worker` against
 > `SCEN0000`, before anything else.
 
-**The control session is in-memory.** *(Now the top remaining gap.)*
-`api/control.py` holds a module-global `SESSION`. Restart the API and the
-policy and the inbox are gone. The decision *journal* survives — it is on disk
-and append-only — but nothing reloads the session from it. Fine for a demo,
-bad for a demo you restart halfway through.
+**~~The control session is in-memory.~~** *(Built.)*
+The mandate, the inbox, the runs and the journal are written to
+`runs/control-session.json` on every change and restored on startup. The write
+is atomic, so an interrupted save cannot leave half a session behind, and a
+file that cannot be read back is discarded rather than half-restored —
+returning a policy we only partly understand is worse than asking for it
+again. Verified across a real process kill, not only in tests.
 
 **~~The worker never resolves a step-up on its own.~~** *(Built.)*
 The window is read from `/v1/bootstrap` rather than assumed, every paused
@@ -220,8 +222,7 @@ query, not a dict built at startup.
 
 If picking two, these are the two most likely to cause a problem live:
 
-1. **Session persistence** — rebuild `control.py`'s session from the decision
-   journal on startup. `replay/log.py` already has `rebuild_state()`; the
-   mandate and inbox need the same treatment.
-2. **`GET /v1/events` reconciliation** — recover cleanly from a network drop
+1. **`GET /v1/events` reconciliation** — recover cleanly from a network drop
    mid-run rather than relying on redelivery alone.
+2. **The regex compiler's coverage** — the weakest remaining link, and the one
+   only a human writing real sentences can stress.

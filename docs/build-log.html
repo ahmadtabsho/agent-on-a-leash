@@ -1,0 +1,237 @@
+<title>Leash Build Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #eef1f4;
+    --surface: #ffffff;
+    --surface-2: #f5f8fa;
+    --line: #d3dae1;
+    --ink: #0d1318;
+    --ink-2: #505d69;
+    --ink-3: #7b8794;
+    --accent: #14509b;
+    --accent-soft: #e2ebf7;
+    --ok: #0a6b45;
+    --stop: #a32218;
+    --ask: #855800;
+    --display: "IBM Plex Sans Condensed", "Helvetica Neue", Arial, sans-serif;
+    --body: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0c1115; --surface: #141b21; --surface-2: #1a232b;
+      --line: #27323c; --ink: #e6ecf2; --ink-2: #9aa7b4; --ink-3: #6e7c89;
+      --accent: #74abf0; --accent-soft: #15273d;
+      --ok: #4fc08d; --stop: #f18d83; --ask: #e2b662;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0c1115; --surface: #141b21; --surface-2: #1a232b;
+    --line: #27323c; --ink: #e6ecf2; --ink-2: #9aa7b4; --ink-3: #6e7c89;
+    --accent: #74abf0; --accent-soft: #15273d;
+    --ok: #4fc08d; --stop: #f18d83; --ask: #e2b662;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--body); font-size: 16.5px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 760px; margin: 0 auto;
+    padding-block: 40px 80px; padding-inline: 20px;
+    display: grid; gap: 40px;
+  }
+
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 12px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 700;
+    font-size: clamp(34px, 6.5vw, 52px); line-height: 1.04;
+    letter-spacing: -0.02em; margin: 0; text-wrap: balance;
+  }
+  .sub { color: var(--ink-2); font-style: italic; margin: 12px 0 0; max-width: 54ch; }
+
+  .nums {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 1px; background: var(--line); border: 1px solid var(--line); margin-top: 24px;
+  }
+  .nums div { background: var(--surface); padding: 11px 13px; }
+  .nums dt {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 3px;
+  }
+  .nums dd {
+    font-family: var(--display); font-weight: 600; font-size: 23px;
+    margin: 0; font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  }
+  .nums dd small { font-size: 12px; color: var(--ink-3); }
+
+  h2 {
+    font-family: var(--display); font-weight: 700;
+    font-size: 25px; letter-spacing: -0.015em; margin: 0 0 4px;
+  }
+  .kicker {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px;
+  }
+  p { margin: 0 0 14px; max-width: 66ch; }
+  strong { font-weight: 600; }
+  a { color: var(--accent); }
+  code {
+    font-family: var(--mono); font-size: 0.85em; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 3px; padding: 0.06em 0.34em;
+    white-space: nowrap;
+  }
+
+  /* build steps */
+  .built { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .built div {
+    background: var(--surface); padding: 11px 15px;
+    display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 13px; align-items: baseline;
+  }
+  .built b {
+    font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500;
+  }
+  .built span { font-size: 15px; }
+  .built em { font-style: normal; color: var(--ink-2); }
+
+  /* bug list */
+  ol.bugs { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 10px; }
+  ol.bugs li {
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 3px solid var(--stop); padding: 12px 15px; font-size: 15px;
+  }
+  ol.bugs b { font-family: var(--display); font-weight: 600; display: block; margin-bottom: 3px; font-size: 16px; }
+  ol.bugs span { color: var(--ink-2); }
+  ol.bugs code { font-size: 0.82em; }
+
+  .note {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    padding: 14px 18px; margin: 0 0 14px; max-width: 64ch;
+  }
+  .note p { margin: 0; }
+  .note p + p { margin-top: 8px; }
+  .note b { font-family: var(--display); font-size: 15px; }
+
+  ul.open { margin: 0; padding-left: 19px; max-width: 66ch; }
+  ul.open li { margin-bottom: 8px; }
+
+  pre {
+    font-family: var(--mono); font-size: 13px; line-height: 1.6;
+    background: var(--surface); border: 1px solid var(--line);
+    padding: 14px 16px; overflow-x: auto; margin: 0 0 14px;
+  }
+  .cm { color: var(--ink-3); }
+
+  footer {
+    border-top: 2px solid var(--ink); padding-top: 16px;
+    font-family: var(--mono); font-size: 12px; color: var(--ink-3);
+    display: flex; flex-wrap: wrap; gap: 6px 20px;
+  }
+</style>
+
+<div class="page">
+
+  <header>
+    <p class="eyebrow">Viseca &times; START Global 2026 &middot; build summary</p>
+    <h1>Leash Build Log</h1>
+    <p class="sub">What got built, what broke, and what is still open &mdash; the short version.</p>
+    <dl class="nums">
+      <div><dt>Steps</dt><dd>9</dd></div>
+      <div><dt>Commits</dt><dd>7</dd></div>
+      <div><dt>Tests</dt><dd>207</dd></div>
+      <div><dt>Purchases</dt><dd>45</dd></div>
+      <div><dt>Slowest</dt><dd>0.97<small> ms</small></dd></div>
+    </dl>
+  </header>
+
+  <section>
+    <p class="kicker">The task</p>
+    <h2>Decide whether an AI agent may spend your money</h2>
+    <p>An AI shopping assistant can now pay with a real card. This builds the layer in between &mdash; the one that looks at each proposed purchase and answers <strong style="color:var(--ok)">approve</strong>, <strong style="color:var(--stop)">decline</strong>, or <strong style="color:var(--ask)">ask the customer</strong>, inside eight seconds, with reasons attached.</p>
+    <p>Not the shopping agent. Not the payment. Just the decision, and the customer&rsquo;s control over it.</p>
+  </section>
+
+  <section>
+    <p class="kicker">What was built</p>
+    <h2>Nine steps, in order</h2>
+    <div class="built">
+      <div><b>1</b><span><strong>Repo &amp; data pack.</strong> <em>Vendored the 45 purchases and 4,701 history rows; every file checked against its manifest by sha256.</em></span></div>
+      <div><b>2</b><span><strong>Typed contract.</strong> <em>Strict parsing against the platform&rsquo;s own schema. Money is Decimal, never float.</em></span></div>
+      <div><b>3</b><span><strong>Policy compiler.</strong> <em>A sentence becomes executable rules, plain-English guidance, and the questions it refuses to answer for you.</em></span></div>
+      <div><b>4</b><span><strong>Decision engine.</strong> <em>Seven stages, pure function, no network. All 45 purchases decided in under a millisecond each.</em></span></div>
+      <div><b>5</b><span><strong>Replay harness.</strong> <em>Runs every scenario offline with no API key, journalling each decision so a crash cannot reset the budget.</em></span></div>
+      <div><b>6</b><span><strong>Sandbox worker.</strong> <em>Long-polls the Viseca API and answers each purchase; a repeat delivery replays the saved answer.</em></span></div>
+      <div><b>7</b><span><strong>Control interface.</strong> <em>React + a separate API. Draft, confirm, run, pause, answer, tighten, revoke.</em></span></div>
+      <div><b>8</b><span><strong>Optional model.</strong> <em>A second opinion on one narrow question. Off by default, and unable to approve anything.</em></span></div>
+      <div><b>9</b><span><strong>Demo &amp; docs.</strong> <em>The three moments the brief asks to show, picked from a live run rather than scripted.</em></span></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">What broke</p>
+    <h2>Five bugs the fixtures caught</h2>
+    <p>The first engine looked right and was wrong in four places. All four were found by <em>running</em> the supplied data, not by reading the code.</p>
+    <ol class="bugs">
+      <li><b>The spending limit let through the purchase that broke it</b><span>A rolling limit compared only <em>prior</em> spend, so CHF&nbsp;299.50&nbsp;+&nbsp;65.50 sailed past a CHF&nbsp;300 cap and the <em>next</em> order got blamed.</span></li>
+      <li><b>&ldquo;The seller didn&rsquo;t say&rdquo; was treated as &ldquo;no&rdquo;</b><span>An unstated return policy was declining. It is not permission &mdash; but it is not a refusal either. It goes to the customer.</span></li>
+      <li><b>A trail shoe passed as a road-running shoe</b><span>Its description advertises a &ldquo;lugged <strong>off-road</strong> sole&rdquo;, and the matcher was reading marketing copy as identity.</span></li>
+      <li><b>&ldquo;Pause&rdquo; was being read as &ldquo;refuse&rdquo;</b><span>An unfamiliar device is a new laptop as often as it is an intruder. Signals that rest on a guess now ask rather than block.</span></li>
+      <li><b>Our own output failed our own contract</b><span>Found by a test. The serialiser wrote amounts as strings, so an event saved and reloaded no longer validated.</span></li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Three decisions</p>
+    <h2>The choices that shape everything else</h2>
+
+    <div class="note">
+      <p><b>Merchant text is read, never obeyed.</b></p>
+      <p>Product descriptions are useful (size, return window) and written by whoever wants the payment approved. Facts are pulled out by pattern &mdash; a pattern can only yield a number or a word, so no phrasing produces permission. The scanner holds no reference to the policy, so by construction nothing written in a shop&rsquo;s description can reach the verdict.</p>
+    </div>
+
+    <div class="note">
+      <p><b>&ldquo;Uncertain&rdquo; is a separate answer from &ldquo;no&rdquo;.</b></p>
+      <p>Most of the work is keeping those apart. Collapsing them one way blocks ordinary shopping; the other way waves through things nobody checked. When the engine cannot establish a fact, the customer&rsquo;s own stated preference decides.</p>
+    </div>
+
+    <div class="note">
+      <p><b>The model cannot approve anything.</b></p>
+      <p>It answers one question, never sees the policy, and can only raise doubt &mdash; never resolve it. The worst a broken or hostile model can do is send a purchase to the customer. A test proves a broken model gives identical decisions to no model at all.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Still open</p>
+    <h2>What is honestly not done</h2>
+    <ul class="open">
+      <li><strong>Nothing has touched the live API.</strong> Every endpoint is written and tested against a mock, but the team key arrives on event day. Only <code>/healthz</code> has been hit for real.</li>
+      <li><strong>The control session is in-memory.</strong> Fine for a demo; a real deployment needs the policy and inbox to survive a restart. The decision journal already does.</li>
+      <li><strong>Two numbers are judgements, not measurements</strong> &mdash; the familiarity threshold (one prior purchase) and the duplicate window (three hours).</li>
+      <li><strong>The optional model has never called a real endpoint.</strong> Every failure path is tested; the happy path is not.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Seeing it</p>
+    <h2>Three commands</h2>
+    <pre><code>make demo      <span class="cm"># the three moments the brief asks to show</span>
+make replay    <span class="cm"># all 45 purchases, every decision and why</span>
+make serve &amp;&amp; make ui   <span class="cm"># the interface on localhost:5173</span></code></pre>
+    <p>No API key needed for any of it &mdash; the supplied scenarios run entirely offline. The full walkthrough, with the pipeline explained stage by stage, is in <code>docs/pipeline.html</code>.</p>
+  </section>
+
+  <footer>
+    <span>leash/0.1.0</span>
+    <span>github.com/ahmadtabsho/agent-on-a-leash</span>
+  </footer>
+
+</div>

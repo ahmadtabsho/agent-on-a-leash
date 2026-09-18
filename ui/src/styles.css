@@ -148,3 +148,16 @@ code {
 .error { border-left: 3px solid var(--stop); background: var(--stop-bg); color: var(--stop); padding: 10px 14px; border-radius: 0 8px 8px 0; margin-bottom: 16px; font-size: 14px; }
 .empty { color: var(--ink-2); font-size: 14px; margin: 0; }
 .stamp { color: var(--ink-2); font-size: 12.5px; }
+
+.clock {
+  font-size: 12.5px; font-variant-numeric: tabular-nums;
+  border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px;
+  color: var(--ink-2); white-space: nowrap;
+}
+.clock.urgent { color: var(--stop); border-color: var(--stop); font-weight: 600; }
+
+.lapsed-item {
+  border: 1px dashed var(--line); border-radius: 8px;
+  padding: 9px 13px; margin-bottom: 8px; font-size: 14px; color: var(--ink-2);
+}
+.lapsed-item .who { font-weight: 550; color: var(--ink); }

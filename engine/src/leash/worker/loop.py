@@ -24,7 +24,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 from dataclasses import field as dc_field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from ..api.client import ApiError, LeashClient
@@ -35,9 +35,19 @@ from ..models.enums import Decision
 from ..replay.log import DecisionLog, DecisionRecord
 
 
+class LapsedReviewError(RuntimeError):
+    """An answer arrived after the customer's window had already closed."""
+
+
 @dataclass
 class PendingReview:
-    """A purchase paused for the customer."""
+    """A purchase paused for the customer, and how long they have.
+
+    The platform gives the customer a fixed window — 120 seconds by default,
+    read from `/v1/bootstrap` rather than assumed. When it lapses the purchase
+    is simply not approved; see `Worker.sweep_expired` for why nothing is sent
+    on the customer's behalf.
+    """
 
     authorization_id: str
     source_authorization_id: str
@@ -46,6 +56,17 @@ class PendingReview:
     customer_message: str
     evidence: list[dict]
     raised_at: datetime
+    expires_at: datetime | None = None
+    lapsed: bool = False
+
+    def seconds_left(self, now: datetime) -> float | None:
+        if self.expires_at is None:
+            return None
+        return (self.expires_at - now).total_seconds()
+
+    def is_expired(self, now: datetime) -> bool:
+        left = self.seconds_left(now)
+        return left is not None and left <= 0
 
 
 @dataclass
@@ -61,6 +82,7 @@ class WorkerStats:
     )
     slowest_ms: float = 0.0
     missed_deadlines: int = 0
+    lapsed_reviews: int = 0
 
 
 class Worker:
@@ -82,6 +104,23 @@ class Worker:
         self.log = DecisionLog(log_path)
         self.stats = WorkerStats()
         self.pending: dict[str, PendingReview] = {}
+        self.lapsed: dict[str, PendingReview] = {}
+        # Filled from /v1/bootstrap by `adopt_timeouts`. None until then, and a
+        # review with no deadline is never treated as expired — guessing the
+        # window would be worse than not tracking it.
+        self.human_timeout_seconds: float | None = None
+
+    def adopt_timeouts(self) -> float | None:
+        """Read the human window from the service rather than assuming it."""
+        try:
+            timeouts = self.client.bootstrap().get("timeouts", {})
+        except ApiError:
+            # Reporting, not correctness. A run works without this.
+            return None
+        value = timeouts.get("human_timeout_seconds")
+        if isinstance(value, (int, float)) and value > 0:
+            self.human_timeout_seconds = float(value)
+        return self.human_timeout_seconds
 
     # --- one purchase ------------------------------------------------------
 
@@ -124,6 +163,8 @@ class Worker:
             raise
 
         if verdict.decision is Decision.STEP_UP:
+            raised = datetime.now(timezone.utc)
+            window = self.human_timeout_seconds
             self.pending[auth.authorization_id] = PendingReview(
                 authorization_id=auth.authorization_id,
                 source_authorization_id=auth.source_authorization_id,
@@ -131,7 +172,8 @@ class Worker:
                 billing_amount_chf=float(auth.billing_amount_chf),
                 customer_message=verdict.customer_message,
                 evidence=[f.to_payload() for f in verdict.findings],
-                raised_at=datetime.now(timezone.utc),
+                raised_at=raised,
+                expires_at=raised + timedelta(seconds=window) if window else None,
             )
         return verdict.decision
 
@@ -152,12 +194,55 @@ class Worker:
         except ApiError:
             self.stats.api_errors += 1
 
+    # --- the window the customer has ---------------------------------------
+
+    def sweep_expired(self, now: datetime | None = None) -> list[PendingReview]:
+        """Move reviews whose window has lapsed out of the inbox.
+
+        Nothing is sent to the platform. That is the whole point: the guide is
+        explicit that we must not "invent a human answer", and a decline we
+        submit because nobody replied is exactly that — it would be recorded as
+        the customer's decision when the customer never made one.
+
+        Measured against the live service rather than assumed: a purchase left
+        unanswered moves from `awaiting_customer` to `timed_out` on its own at
+        exactly the 120-second mark. The platform already handles the lapse
+        correctly, so anything we sent would overwrite that with a decision
+        nobody made. This sweep only mirrors the transition locally.
+
+        So a lapsed review is not an answer, it is the *absence* of one. The
+        purchase was never approved, its amount was never spend, and the
+        customer is told plainly that we asked and the window closed. Leaving
+        it in the inbox would be worse: it would look like it is still theirs
+        to answer when the platform has stopped listening.
+        """
+        now = now or datetime.now(timezone.utc)
+        moved: list[PendingReview] = []
+        for authorization_id, review in list(self.pending.items()):
+            if not review.is_expired(now):
+                continue
+            review.lapsed = True
+            self.lapsed[authorization_id] = self.pending.pop(authorization_id)
+            self.stats.lapsed_reviews += 1
+            moved.append(review)
+        return moved
+
+    def time_remaining(self, now: datetime | None = None) -> dict[str, float | None]:
+        """Seconds left on each waiting purchase, for the interface to show."""
+        now = now or datetime.now(timezone.utc)
+        return {a: r.seconds_left(now) for a, r in self.pending.items()}
+
     # --- the customer's own answer ----------------------------------------
 
     def resolve(self, authorization_id: str, decision: Decision, message: str = "") -> dict:
         """Send the customer's approve or decline for a paused purchase."""
         if decision not in (Decision.APPROVE, Decision.DECLINE):
             raise ValueError("a customer answers approve or decline, nothing else")
+        if authorization_id in self.lapsed:
+            raise LapsedReviewError(
+                f"{authorization_id} was asked about but the customer's window closed; "
+                "the platform is no longer accepting an answer for it"
+            )
         payload = {
             "decision": decision.value,
             "customer_message": message or f"The customer chose to {decision.value} this purchase.",
@@ -186,6 +271,8 @@ class Worker:
         """
         started = time.monotonic()
         consecutive_empty = 0
+        if self.human_timeout_seconds is None:
+            self.adopt_timeouts()
 
         while consecutive_empty < max_empty_polls:
             if deadline_seconds and time.monotonic() - started > deadline_seconds:
@@ -197,6 +284,7 @@ class Worker:
                 raise
 
             self.stats.polled += 1
+            self.sweep_expired()
             if not polled.has_work:
                 self.stats.empty_polls += 1
                 consecutive_empty += 1

@@ -105,9 +105,25 @@ function Step({ step }) {
   )
 }
 
-/** Purchases paused for the customer. Only they can answer. */
-function Inbox({ pending, onResolve, busy }) {
-  if (pending.length === 0) {
+/** Seconds remaining, ticking, so the countdown is honest rather than stale. */
+function useCountdown(pending) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (pending.length === 0) return undefined
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [pending.length])
+  return (expiresAt) => {
+    if (!expiresAt) return null
+    return Math.max(0, Math.round((new Date(expiresAt).getTime() - now) / 1000))
+  }
+}
+
+/** Purchases paused for the customer. Only they can answer, and only in time. */
+function Inbox({ pending, lapsed, onResolve, busy }) {
+  const secondsLeft = useCountdown(pending)
+
+  if (pending.length === 0 && lapsed.length === 0) {
     return (
       <div className="card">
         <h2>Waiting on you</h2>
@@ -118,15 +134,24 @@ function Inbox({ pending, onResolve, busy }) {
   return (
     <div className="card">
       <h2>Waiting on you</h2>
-      <p className="hint">
-        These purchases are paused. They are not approved, and they do not count against your
-        limits until you answer.
-      </p>
-      {pending.map((item) => (
+      {pending.length > 0 && (
+        <p className="hint">
+          These purchases are paused. They are not approved, and they do not count against your
+          limits until you answer.
+        </p>
+      )}
+      {pending.map((item) => {
+        const left = secondsLeft(item.expires_at)
+        return (
         <div className="inbox-item" key={item.authorization_id}>
           <div className="step-head">
             <span className="who">{item.merchant_name}</span>
             <span className="amount">{money(item.billing_amount_chf)}</span>
+            {left !== null && (
+              <span className={left <= 30 ? 'clock urgent' : 'clock'}>
+                {left > 0 ? `${left}s to answer` : 'window closed'}
+              </span>
+            )}
             <span className="meta">{item.source_authorization_id}</span>
           </div>
           <p className="why">{item.customer_message}</p>
@@ -154,7 +179,25 @@ function Inbox({ pending, onResolve, busy }) {
             </button>
           </div>
         </div>
-      ))}
+        )
+      })}
+
+      {lapsed.length > 0 && (
+        <div className="block">
+          <h3>Asked, but not answered in time</h3>
+          <p className="empty">
+            Nothing was decided on your behalf. These were never approved, and they never
+            counted against your limits.
+          </p>
+          {lapsed.map((item) => (
+            <div className="lapsed-item" key={item.authorization_id}>
+              <span className="who">{item.merchant_name}</span>{' '}
+              <span>{money(item.billing_amount_chf)}</span>{' '}
+              <span className="meta">{item.source_authorization_id}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -166,6 +209,7 @@ export default function App() {
   const [mandate, setMandate] = useState(null)
   const [run, setRun] = useState(null)
   const [pending, setPending] = useState([])
+  const [lapsed, setLapsed] = useState([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -186,9 +230,23 @@ export default function App() {
     api.health().then(setHealth).catch((e) => setError(e.message))
   }, [])
 
+  // Re-read the inbox while anything is waiting, so a window that closes on
+  // the server is reflected here rather than leaving a dead button.
+  useEffect(() => {
+    if (pending.length === 0) return undefined
+    const id = setInterval(() => {
+      api.pending().then((d) => {
+        setPending(d.pending)
+        setLapsed(d.lapsed || [])
+      }).catch(() => {})
+    }, 5000)
+    return () => clearInterval(id)
+  }, [pending.length])
+
   const refreshPending = useCallback(async () => {
     const data = await api.pending()
     setPending(data.pending)
+    setLapsed(data.lapsed || [])
   }, [])
 
   const useScenario = (scenario) => {
@@ -245,6 +303,7 @@ export default function App() {
       setMandate(null)
       setRun(null)
       setPending([])
+      setLapsed([])
       setInstruction('')
     })
 
@@ -320,7 +379,7 @@ export default function App() {
         </div>
       )}
 
-      <Inbox pending={pending} onResolve={resolve} busy={busy} />
+      <Inbox pending={pending} lapsed={lapsed} onResolve={resolve} busy={busy} />
 
       {run && (
         <div className="card">

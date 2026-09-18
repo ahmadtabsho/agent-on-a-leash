@@ -290,23 +290,40 @@ def cmd_run(args: argparse.Namespace) -> int:
 
             # The human path. The person at the terminal is the customer here.
             if live.pending:
+                from datetime import datetime, timezone
+
                 print(f"\n  {len(live.pending)} purchase(s) are waiting on you:\n")
                 for review in list(live.pending):
+                    left = review.seconds_left(datetime.now(timezone.utc))
+                    clock = f"  [{left:.0f}s left]" if left is not None else ""
                     print(f"    {review.source_authorization_id}  "
-                          f"{review.merchant_name}  CHF {review.billing_amount_chf:.2f}")
+                          f"{review.merchant_name}  CHF {review.billing_amount_chf:.2f}{clock}")
                     print(f"      {review.customer_message}")
                     if args.resolve == "ask":
                         choice = input("      approve / decline / skip? ").strip().lower()
                     else:
                         choice = args.resolve
-                    if choice.startswith("a"):
-                        resolve_pending(live, review.authorization_id, Decision.APPROVE)
-                        print("      -> you approved it\n")
-                    elif choice.startswith("d"):
-                        resolve_pending(live, review.authorization_id, Decision.DECLINE)
-                        print("      -> you declined it\n")
-                    else:
-                        print("      -> left waiting\n")
+                    from .worker import LapsedReviewError
+
+                    try:
+                        if choice.startswith("a"):
+                            resolve_pending(live, review.authorization_id, Decision.APPROVE)
+                            print("      -> you approved it\n")
+                        elif choice.startswith("d"):
+                            resolve_pending(live, review.authorization_id, Decision.DECLINE)
+                            print("      -> you declined it\n")
+                        else:
+                            print("      -> left waiting\n")
+                    except LapsedReviewError as exc:
+                        print(f"      -> too late: {exc}\n")
+
+            if live.lapsed:
+                print(f"\n  {len(live.lapsed)} purchase(s) lapsed without an answer:\n")
+                for review in live.lapsed:
+                    print(f"    {review.source_authorization_id}  {review.merchant_name}  "
+                          f"CHF {review.billing_amount_chf:.2f}")
+                    print("      You were asked and the window closed. It was never approved, "
+                          "and nothing was answered on your behalf.\n")
 
             if args.revoke and live.mandate_id:
                 client.revoke_mandate(live.mandate_id)

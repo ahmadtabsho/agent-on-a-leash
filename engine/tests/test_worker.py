@@ -241,3 +241,50 @@ def test_a_keyed_call_without_a_key_fails_before_the_network():
     with pytest.raises(ApiError) as excinfo:
         client.bootstrap()
     assert "TEAM_API_KEY" in str(excinfo.value)
+
+
+def test_a_real_live_envelope_parses():
+    """Captured from the live service, not written from the spec.
+
+    The written contract does not give `event_id` a type; the service sends an
+    integer. Typing it as a string rejected every purchase in the first live
+    run, which no amount of testing against our own fixtures would have caught.
+    """
+    import json
+    from pathlib import Path
+
+    from leash.models import parse_envelope
+
+    path = Path(__file__).parent / "fixtures_live_envelope.json"
+    envelope = parse_envelope(json.loads(path.read_text()))
+
+    assert isinstance(envelope.event_id, int)
+    assert envelope.authorization_id.startswith("LA_")
+    assert envelope.data.authorization.source_authorization_id == "AU0001"
+    assert not envelope.is_redelivery
+
+
+def test_a_redelivered_envelope_is_recognisable():
+    """The service redelivers after 3 seconds; delivery_count says so."""
+    import json
+    from pathlib import Path
+
+    from leash.models import parse_envelope
+
+    path = Path(__file__).parent / "fixtures_live_envelope.json"
+    raw = json.loads(path.read_text())
+    raw["delivery_count"] = 2
+    assert parse_envelope(raw).is_redelivery
+
+
+def test_an_envelope_with_an_unknown_field_still_parses():
+    """A field the platform adds later must not stop a run."""
+    import json
+    from pathlib import Path
+
+    from leash.models import parse_envelope
+
+    path = Path(__file__).parent / "fixtures_live_envelope.json"
+    raw = json.loads(path.read_text())
+    raw["some_future_field"] = {"added": "later"}
+    assert parse_envelope(raw).authorization_id

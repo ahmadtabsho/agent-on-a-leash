@@ -33,3 +33,6 @@ Screenshot*.png
 
 # UI build output
 ui/dist/
+
+# Live run journals
+runs/

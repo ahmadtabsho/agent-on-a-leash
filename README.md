@@ -53,7 +53,7 @@ These are the constraints the challenge grades on, and they shape every module:
 | --- | --- | --- |
 | 1 | Repo skeleton, vendored data pack | done |
 | 2 | Domain model and event parser | done |
-| 3 | Policy compiler (instruction to rules) | todo |
+| 3 | Policy compiler (instruction to rules) | done |
 | 4 | Decision engine | todo |
 | 5 | Offline replay harness | todo |
 | 6 | Sandbox API client and worker | todo |
@@ -70,10 +70,13 @@ make check               # verify the vendored data pack against its manifest
 make test                # run the suite
 ```
 
-Check any JSON file against the published event contract:
+Check any JSON file against the published event contract, or see what an
+instruction compiles to:
 
 ```bash
 .venv/bin/leash validate path/to/event.json
+.venv/bin/leash policy "Buy groceries under CHF 50. Ask me when uncertain."
+.venv/bin/leash policy --scenario SCEN0002 --json
 ```
 
 The hosted sandbox needs no key for its health probe:

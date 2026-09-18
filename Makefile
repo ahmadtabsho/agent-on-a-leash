@@ -32,8 +32,11 @@ demo: ## the three things the brief asks to see
 serve: ## run the control API on :8000
 	$(BIN)/python -m uvicorn leash.api.control:app --reload --port 8000
 
-worker: ## run the sandbox worker (needs TEAM_API_KEY)
+worker: ## poll the sandbox and answer purchases (needs TEAM_API_KEY)
 	$(BIN)/leash worker
+
+run: ## the whole live sequence for one scenario (needs TEAM_API_KEY)
+	$(BIN)/leash run --scenario SCEN0000
 
 ui: ## run the control interface on :5173
 	cd ui && npm install && npm run dev

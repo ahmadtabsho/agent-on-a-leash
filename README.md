@@ -127,6 +127,7 @@ make health
 
 | Where | What |
 | --- | --- |
+| [deck/](deck/) | The pitch deck, as an editable `.pptx` and a `.pdf`. |
 | [docs/what-is-ours.md](docs/what-is-ours.md) | What arrives with the challenge, and what we build on top of it. |
 | [docs/build-log.html](docs/build-log.html) | The short version: what was built, what broke, what is still open. Also at <https://claude.ai/artifact/M86MXuuuDzosJKDHQBHZMT> (private). |
 | [docs/pipeline.html](docs/pipeline.html) | The full walkthrough: the seven stages, the traps each one prevents, the bugs found, and what is still open. Also published at <https://claude.ai/artifact/9zgVZWPAdzvjm9gnNkUeso> (private). |

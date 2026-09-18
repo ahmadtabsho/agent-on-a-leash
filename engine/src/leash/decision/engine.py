@@ -19,6 +19,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 
+from ..llm.advisor import Advice, IntentAdvisor
 from ..models.enums import (
     AuthorityStatus,
     CardStatus,
@@ -48,9 +49,16 @@ class EngineConfig:
 class DecisionEngine:
     """Decides whether one proposed purchase may go ahead."""
 
-    def __init__(self, history: CardHistory | None = None, config: EngineConfig | None = None):
+    def __init__(
+        self,
+        history: CardHistory | None = None,
+        config: EngineConfig | None = None,
+        advisor: IntentAdvisor | None = None,
+    ):
         self.history = history if history is not None else default_history()
         self.config = config or EngineConfig()
+        # Optional. Everything below decides identically without it.
+        self.advisor = advisor
 
     # --- stages ------------------------------------------------------------
 
@@ -138,6 +146,42 @@ class DecisionEngine:
             return
         for rule in event.mandate.hard_rules:
             ledger.findings.append(evaluate_rule(rule, facts))
+
+    def _second_opinion(self, event: AuthorizationEvent, facts: Facts, ledger: Ledger) -> None:
+        """Ask the optional advisor whether an apparent match really matches.
+
+        Strictly one-directional. The advisor can turn an apparent match into
+        uncertainty; it can never turn uncertainty into a match, and it never
+        sees the policy. The worst a wrong or compromised model can do is send
+        a purchase to the customer — it cannot approve one.
+        """
+        if self.advisor is None or not self.advisor.available:
+            return
+        requested = facts._requested_phrase()
+        if not requested:
+            return
+        matched = facts.matching_lines()
+        if not matched or len(matched) == len(event.authorization.items) == 0:
+            return
+
+        for item in matched:
+            result = self.advisor.compare(requested, item.item_name, item.item_category)
+            if result is None:
+                # Unavailable, slow, or unusable. The deterministic answer stands.
+                return
+            if result.advice is Advice.MATCH:
+                continue
+            ledger.add(
+                Stage.SIGNALS,
+                "intent_match_disputed",
+                Outcome.UNCERTAIN,
+                f'a second check was not satisfied that line {item.line_no}, '
+                f'"{item.item_name}", is the "{requested}" you asked for '
+                f"({result.why or result.advice.value})",
+                field="derived.requested_item_match",
+                observed=item.item_name,
+                expected=requested,
+            )
 
     def _signals(self, event: AuthorizationEvent, facts: Facts, state: RunState, ledger: Ledger) -> None:
         """Observations no rule asked for, but a customer would want raised."""
@@ -301,6 +345,7 @@ class DecisionEngine:
         )
         self._sanitise(facts, ledger)
         self._hard_rules(event, facts, ledger)
+        self._second_opinion(event, facts, ledger)
         self._signals(event, facts, state, ledger)
 
         verdict = self._resolve(event, ledger, started)

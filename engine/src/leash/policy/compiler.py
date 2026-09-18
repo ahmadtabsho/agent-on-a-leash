@@ -67,7 +67,11 @@ REQUESTED_ITEM = (
     re.compile(r"\breplace\s+my\s+(?:worn\s+|old\s+|current\s+)?(?P<what>[\w\s-]+?)(?=\s+in\s+size\b|\s+for\b|[,.;]|$)", re.IGNORECASE),
     re.compile(r"\bbuy\s+(?:me\s+)?the\s+(?P<what>[\w\s-]+?)(?=\s+I\s+(?:chose|picked|asked|want)|\s+for\b|[,.;]|$)", re.IGNORECASE),
     re.compile(r"\bmay\s+buy\s+(?P<what>[\w\s-]+?)(?=\s+for\s+me\b|\s+for\b|[,.;]|$)", re.IGNORECASE),
-    re.compile(r"\bbuy\s+(?:one\s+|a\s+|an\s+)?(?:ordinary\s+)?(?P<what>[\w\s-]+?)(?=\s+for\b|[,.;]|$)", re.IGNORECASE),
+    re.compile(
+        r"\bbuy\s+(?:me\s+|us\s+)?(?:one\s+|a\s+|an\s+)?(?:ordinary\s+)?"
+        r"(?P<what>[\w\s-]+?)(?=\s+for\b|\s+from\b|\s+at\b|\s+under\b|[,.;]|$)",
+        re.IGNORECASE,
+    ),
 )
 
 # Words that name a kind of thing rather than a particular thing. "One ordinary
@@ -411,7 +415,7 @@ def _extract_requested_item(text: str) -> tuple[list[CompiledRule], list[str], l
             continue
         what = " ".join(match.group("what").split()).strip().lower()
         # Strip leading filler the patterns can pick up before the noun.
-        what = re.sub(r"^(?:my|our|the|some)\s+", "", what)
+        what = re.sub(r"^(?:me|us|my|our|the|some)\s+", "", what)
         tokens = {t for t in re.split(r"[\s-]+", what) if t}
         generic = GENERIC_ITEM_WORDS | set(ITEM_CATEGORY_WORDS)
         if tokens and tokens <= generic:

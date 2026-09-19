@@ -161,3 +161,14 @@ code {
   padding: 9px 13px; margin-bottom: 8px; font-size: 14px; color: var(--ink-2);
 }
 .lapsed-item .who { font-weight: 550; color: var(--ink); }
+
+.mismatch {
+  border-left: 3px solid var(--ask);
+  background: var(--ask-bg);
+  color: var(--ink);
+  padding: 12px 15px;
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+.mismatch strong { color: var(--ask); }

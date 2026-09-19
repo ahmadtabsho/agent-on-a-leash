@@ -16,6 +16,12 @@ google-chrome --headless --disable-gpu --no-sandbox \
   docs/report/technical-report.html 2>/dev/null
 echo "tech   : docs/report/technical-report.pdf"
 
+google-chrome --headless --disable-gpu --no-sandbox \
+  --print-to-pdf=docs/report/questions-we-expect.pdf \
+  --no-pdf-header-footer --virtual-time-budget=12000 \
+  docs/report/qa.html 2>/dev/null
+echo "q&a    : docs/report/questions-we-expect.pdf"
+
 .venv/bin/python deck/build_deck.py >/dev/null
 soffice --headless --convert-to pdf --outdir /tmp/_deckpdf deck/agent-on-a-leash.pptx >/dev/null 2>&1
 cp /tmp/_deckpdf/agent-on-a-leash.pdf deck/agent-on-a-leash.pdf

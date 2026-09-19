@@ -159,7 +159,7 @@ identical to no model at all.
 
 | Where | What |
 | --- | --- |
-| [docs/report/](docs/report/) | Two PDFs: a 12-page overview, and a 15-page technical report covering the data, the problem and every component |
+| [docs/report/](docs/report/) | Three PDFs: a 12-page overview, an 18-page technical report, and the questions we expect from judges |
 | [docs/code-map.md](docs/code-map.md) | What calls what, one decision traced end to end |
 | [docs/pipeline.html](docs/pipeline.html) | The seven stages in depth, and the traps each prevents |
 | [docs/what-is-ours.md](docs/what-is-ours.md) | The boundary between what the challenge supplies and what we wrote |

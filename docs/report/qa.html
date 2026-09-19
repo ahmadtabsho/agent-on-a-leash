@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Questions We Expect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  @page { size: A4; margin: 18mm 16mm 16mm; }
+  @page:first { margin: 0; }
+
+  :root {
+    --ink: #101418;
+    --ink-2: #444f59;
+    --ink-3: #6f7c88;
+    --line: #ccd4dc;
+    --line-2: #e6ebf0;
+    --paper: #ffffff;
+    --tint: #f2f5f8;
+    --accent: #0f4c92;
+    --accent-tint: #e6eef8;
+    --ok: #0a6b45;   --ok-bg: #e2f2ea;
+    --stop: #a01f16; --stop-bg: #fae8e6;
+    --ask: #7d5300;  --ask-bg: #faeeda;
+    --display: "IBM Plex Sans Condensed", "Helvetica Neue", Arial, sans-serif;
+    --body: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", "DejaVu Sans Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 10.2pt; line-height: 1.52;
+  }
+
+  /* ---------- cover ---------- */
+  .cover {
+    height: 297mm; padding: 34mm 22mm 20mm;
+    display: flex; flex-direction: column;
+    border-left: 9mm solid var(--accent);
+    page-break-after: always;
+  }
+  .cover .org {
+    font-family: var(--mono); font-size: 8.6pt; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 14mm;
+  }
+  .cover h1 {
+    font-family: var(--display); font-weight: 700; font-size: 40pt;
+    line-height: 1.0; letter-spacing: -0.02em; margin: 0;
+  }
+  .cover .tag {
+    font-size: 13pt; color: var(--ink-2); font-style: italic;
+    margin: 7mm 0 0; max-width: 115mm; line-height: 1.45;
+  }
+  .cover .spacer { flex: 1; }
+  .cover .figures {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0; border-top: 1.4pt solid var(--ink); border-bottom: 1.4pt solid var(--ink);
+    padding: 5mm 0; margin-bottom: 9mm;
+  }
+  .cover .figures div { padding-right: 5mm; }
+  .cover .figures dt {
+    font-family: var(--mono); font-size: 7.4pt; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 1.5mm;
+  }
+  .cover .figures dd {
+    font-family: var(--display); font-weight: 600; font-size: 21pt;
+    margin: 0; letter-spacing: -0.01em;
+  }
+  .cover .figures dd small { font-size: 9pt; color: var(--ink-3); font-weight: 400; }
+  .cover .who { font-size: 10pt; color: var(--ink-2); }
+  .cover .who b { font-family: var(--display); font-size: 11pt; color: var(--ink); }
+  .cover .who .names { font-family: var(--mono); font-size: 8.8pt; color: var(--ink-3); margin-top: 2mm; }
+
+  /* ---------- structure ---------- */
+  section { page-break-inside: auto; }
+  h2 {
+    font-family: var(--display); font-weight: 700; font-size: 17pt;
+    letter-spacing: -0.015em; margin: 0 0 1.5mm; line-height: 1.12;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-family: var(--display); font-weight: 600; font-size: 11.5pt;
+    margin: 6mm 0 2mm; page-break-after: avoid;
+  }
+  .num {
+    font-family: var(--mono); font-size: 7.8pt; letter-spacing: 0.13em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 2mm;
+  }
+  .rule { border: 0; border-top: 1.4pt solid var(--ink); margin: 0 0 4mm; }
+  p { margin: 0 0 3mm; }
+  .lede { font-size: 11pt; color: var(--ink-2); margin-bottom: 4mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 5mm; }
+  li { margin-bottom: 1.5mm; }
+  strong { font-weight: 600; }
+  code {
+    font-family: var(--mono); font-size: 8.6pt; background: var(--tint);
+    border: 0.5pt solid var(--line-2); border-radius: 2pt; padding: 0 1mm;
+  }
+
+  .break { page-break-before: always; }
+
+  /* ---------- tables ---------- */
+  table {
+    width: 100%; border-collapse: collapse; font-size: 9.2pt;
+    margin: 3mm 0 4mm; page-break-inside: avoid;
+  }
+  th, td { text-align: left; padding: 1.8mm 2.5mm; border-bottom: 0.5pt solid var(--line-2); vertical-align: top; }
+  thead th {
+    font-family: var(--mono); font-size: 7.4pt; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 500;
+    background: var(--tint); border-bottom: 0.9pt solid var(--line);
+  }
+  td.n { font-family: var(--mono); text-align: right; white-space: nowrap; }
+  tfoot td { font-weight: 600; border-top: 1pt solid var(--line); background: var(--tint); }
+
+  /* ---------- callouts ---------- */
+  .note {
+    border-left: 2.5pt solid var(--accent); background: var(--accent-tint);
+    padding: 3mm 4mm; margin: 3mm 0 4mm; page-break-inside: avoid;
+  }
+  .note p { margin: 0; }
+  .note p + p { margin-top: 2mm; }
+  .note b { font-family: var(--display); font-size: 10.4pt; }
+
+  .finding {
+    border-left: 2.5pt solid var(--stop); background: var(--paper);
+    border-top: 0.5pt solid var(--line-2); border-right: 0.5pt solid var(--line-2);
+    border-bottom: 0.5pt solid var(--line-2);
+    padding: 2.5mm 4mm; margin-bottom: 2.5mm; page-break-inside: avoid;
+  }
+  .finding b { font-family: var(--display); font-size: 10.2pt; display: block; margin-bottom: 1mm; }
+  .finding span { color: var(--ink-2); font-size: 9.4pt; }
+
+  .chip {
+    display: inline-block; font-family: var(--mono); font-size: 7.4pt;
+    letter-spacing: 0.05em; text-transform: uppercase; padding: 0.3mm 1.6mm;
+    border-radius: 2pt;
+  }
+  .chip.ok { background: var(--ok-bg); color: var(--ok); }
+  .chip.stop { background: var(--stop-bg); color: var(--stop); }
+  .chip.ask { background: var(--ask-bg); color: var(--ask); }
+
+  pre {
+    font-family: var(--mono); font-size: 8.4pt; line-height: 1.5;
+    background: var(--tint); border: 0.5pt solid var(--line-2);
+    padding: 3mm 4mm; margin: 2mm 0 4mm; white-space: pre-wrap;
+    page-break-inside: avoid;
+  }
+  .cm { color: var(--ink-3); }
+
+  /* ---------- stage list ---------- */
+  .stages { border-top: 0.9pt solid var(--line); margin: 3mm 0 4mm; }
+  .stage {
+    display: grid; grid-template-columns: 7mm 42mm 1fr; gap: 3mm;
+    padding: 2.2mm 0; border-bottom: 0.5pt solid var(--line-2);
+    page-break-inside: avoid;
+  }
+  .stage b { font-family: var(--mono); color: var(--accent); font-size: 10pt; }
+  .stage .t { font-family: var(--display); font-weight: 600; font-size: 10.2pt; }
+  .stage .d { color: var(--ink-2); font-size: 9.4pt; }
+
+  /* ---------- team ---------- */
+  .team { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin: 3mm 0; }
+  .member {
+    border: 0.5pt solid var(--line-2); border-top: 2pt solid var(--accent);
+    padding: 3mm 4mm; page-break-inside: avoid;
+  }
+  .member b { font-family: var(--display); font-size: 11pt; display: block; margin-bottom: 1.5mm; }
+  .member span { color: var(--ink-2); font-size: 9.2pt; }
+
+  .foot {
+    margin-top: 6mm; padding-top: 2.5mm; border-top: 1.4pt solid var(--ink);
+    font-family: var(--mono); font-size: 7.8pt; color: var(--ink-3);
+    display: flex; justify-content: space-between;
+  }
+</style>
+<style>
+  .qa{border-left:2.5pt solid var(--accent);padding:2.5mm 4mm;margin:0 0 3mm;page-break-inside:avoid;background:var(--tint)}
+  .qa .q{font-family:var(--display);font-weight:600;font-size:10.6pt;margin:0 0 1.5mm}
+  .qa .a{margin:0;font-size:9.6pt}
+  .qa .a+.a{margin-top:2mm}
+  .qa .ev{font-family:var(--mono);font-size:8.2pt;color:var(--ink-3);margin-top:2mm;display:block}
+  .qa.hostile{border-left-color:var(--stop);background:var(--stop-bg)}
+  .qa.hostile .q{color:var(--stop)}
+  .band{font-family:var(--mono);font-size:7.6pt;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-3);border-bottom:.9pt solid var(--line);padding-bottom:1.5mm;margin:6mm 0 3mm}
+  .rulecard{border:.5pt solid var(--line-2);border-left:2.5pt solid var(--ok);padding:2.5mm 4mm;margin-bottom:3mm}
+  .rulecard b{font-family:var(--display);font-size:10.4pt;display:block;margin-bottom:1mm}
+  .rulecard span{color:var(--ink-2);font-size:9.4pt}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <p class="org">Viseca &times; START Global 2026 &middot; Team PrismAI</p>
+  <h1>Questions<br>We Expect</h1>
+  <p class="tag">Thirty questions judges are likely to ask, the honest answer to each, and the evidence to point at.</p>
+  <div class="spacer"></div>
+  <div class="req">
+    <b>Three rules for answering</b>
+    <ol>
+      <li><strong>Answer the question asked</strong>, then stop. Do not pre-empt the follow-up.</li>
+      <li><strong>Name the evidence.</strong> Every claim here has a file, a command or a number behind it.</li>
+      <li><strong>Say &ldquo;we don't know&rdquo; when we don't.</strong> A gap admitted is survivable; a claim that collapses under one follow-up is not.</li>
+    </ol>
+  </div>
+  <div class="meta">Print this. Do not read from it during the presentation.</div>
+</div>
+
+<section>
+  <p class="num">Group A</p>
+  <hr class="rule">
+  <h2>The question they will definitely ask</h2>
+
+  <div class="qa">
+    <p class="q">Where is the AI in this?</p>
+    <p class="a">The AI is the thing being <em>controlled</em>, not the thing doing the controlling. We built the model hook &mdash; three providers, one config line &mdash; then measured whether it earned its place. It added up to 4.7 seconds to a decision and changed zero outcomes, so it ships off by default.</p>
+    <p class="a">Putting a model in the path that gates spending would itself be the vulnerability, in a challenge whose whole point is text trying to talk a decider into approving.</p>
+    <span class="ev">Evidence: 200-run profile, model off 0.172 ms median / model on 2,141 ms. Slide 10.</span>
+  </div>
+
+  <div class="qa">
+    <p class="q">So you didn't use AI at all?</p>
+    <p class="a">We did, in two places, both optional and both outside the hot path. An advisor gives a second opinion on whether a cart line is the item the customer described. A clarifier rewords a question our compiler already generated, and rewrites the instruction from the customer's answer.</p>
+    <p class="a">Both are constrained the same way: the advisor never sees the policy and can only raise doubt, never grant permission. The clarifier changes wording only &mdash; code decides when to ask and which answers are acceptable.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">Is there any machine learning?</p>
+    <p class="a">No, and we would rather say so than imply otherwise. Behavioural signals &mdash; familiarity, velocity, device novelty &mdash; are computed arithmetically from the 4,701 history rows, not learned. At that data scale we think that is the right call: 4,701 rows is not a training set, and a learned model would be less explainable for no measurable gain.</p>
+    <p class="a">The brief suggests combining five disciplines. We use four of them.</p>
+  </div>
+</section>
+
+<section class="break">
+  <p class="num">Group B</p>
+  <hr class="rule">
+  <h2>Correctness and method</h2>
+
+  <div class="qa">
+    <p class="q">How do you know it is not hard-coded to the scenarios?</p>
+    <p class="a">There is a test that rewrites <code>scenario_id</code>, <code>request_id</code> and <code>replay_order</code> on every event and asserts the decisions are unchanged. Nothing in the engine reads any of the three.</p>
+    <span class="ev">Evidence: test_decision.py, test_decisions_do_not_depend_on_scenario_id_or_position</span>
+  </div>
+
+  <div class="qa">
+    <p class="q">There is no answer key. How do you know the decisions are right?</p>
+    <p class="a">We can't prove correctness against ground truth, because the pack deliberately ships none. What we can do is make every verdict defensible: each carries the evidence that produced it, and each decline traces to a rule the customer actually stated.</p>
+    <p class="a">The strongest independent check we have is that the live API and the offline replay produce identical counts across all 45 purchases. Same answers, both paths.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">23 declines out of 45. Isn't that over-blocking?</p>
+    <p class="a">Every decline names the rule it breached. Two of the supplied attempts exist specifically to catch over-blocking &mdash; AU0023, a shop this card has never used but which meets every stated condition, and AU0042, a legitimate re-quote after an earlier decline. Both are approved.</p>
+    <p class="a">SCEN0001 declines five in a row only because the customer's own CHF 300 seven-day limit was reached. That is the policy working, not the engine being cautious.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">What was the hardest part?</p>
+    <p class="a">Keeping &ldquo;uncertain&rdquo; distinct from &ldquo;no&rdquo;. Pass and fail are claims about the purchase; uncertain is a claim about us. Collapse it one way and you block ordinary shopping, which the brief counts as a failure. Collapse it the other way and you wave through what nobody checked.</p>
+    <p class="a">It took four bugs to get right. One of them had an unstated return policy declining, which is not permission but is not a refusal either.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">Did you find bugs in your own system?</p>
+    <p class="a">Eight, and they are listed in the report with how each was caught. Four came from running the supplied data rather than reading it. One came from a round-trip test. One came from first contact with the live API. Two came from using our own interface.</p>
+    <p class="a">The most instructive: a rolling limit that compared only prior spend, so CHF 299.50 plus 65.50 passed a CHF 300 cap and the <em>next</em> order got blamed.</p>
+  </div>
+</section>
+
+<section class="break">
+  <p class="num">Group C</p>
+  <hr class="rule">
+  <h2>Security and the injection scenario</h2>
+
+  <div class="qa">
+    <p class="q">Could a merchant get a purchase approved by writing the right text?</p>
+    <p class="a">No, and not because we filter well. The sanitiser returns data and holds no reference to the policy. Facts are extracted by patterns that can only ever emit a number or a token. There is no code path by which merchant text reaches the verdict.</p>
+    <p class="a">That is a structural property, not a detection rate.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">Why not use an LLM to detect prompt injection? That is what they are good at.</p>
+    <p class="a">Because it inverts the threat model. Using a language model to screen attacker-controlled text means feeding that text to a model whose output then influences a decision. You have moved the attack surface, not removed it.</p>
+    <p class="a">A regular expression has no such surface. It emits a boolean and nothing else.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">What is your false positive rate on injection detection?</p>
+    <p class="a">Exactly 2 of the 56 supplied cart lines flag, and there is a test asserting that number. Ordinary copy &mdash; &ldquo;Road-running shoe, size 43; returns accepted within 30 days&rdquo; &mdash; passes untouched. Blocking ordinary shopping is a failure too.</p>
+    <span class="ev">Evidence: test_sanitize.py, test_ordinary_product_copy_is_not_flagged</span>
+  </div>
+
+  <div class="qa">
+    <p class="q">What if the injection is encoded, or uses invisible characters?</p>
+    <p class="a">Text is normalised before scanning &mdash; NFKC folding plus removal of zero-width joiners, bidirectional overrides and the soft hyphen. There is a test that hides an instruction using zero-width characters and asserts it still fires.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">You detected the two injections in the pack. Would you catch a new one?</p>
+    <p class="a">Honestly: the six signatures describe forms of address, not topics, so they generalise better than a keyword list. But a novel phrasing could evade them.</p>
+    <p class="a">What protects us there is that evasion gains the attacker nothing. The text cannot change a rule regardless. An undetected injection means a missed signal, not an approved purchase.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">How do you stop a lookalike merchant?</p>
+    <p class="a">Familiarity is matched on <code>merchant_id</code>, never on a name, because a name is the one thing an impostor controls. Names are indexed for one purpose only: telling the customer that an unfamiliar shop is wearing a familiar shop's name.</p>
+    <p class="a">PixelHarbour scores 96% similar to PixelHarbor, which this card has used six times. The genuinely new Circuit and Pine draws no similarity finding at all &mdash; which is what proves the check discriminates rather than just fires.</p>
+  </div>
+</section>
+
+<section class="break">
+  <p class="num">Group D</p>
+  <hr class="rule">
+  <h2>Customer control</h2>
+
+  <div class="qa">
+    <p class="q">How does the customer actually stay in control?</p>
+    <p class="a">Four ways, and none of them are in the contract. Nothing runs before they confirm. A live policy can only be tightened, never loosened. A paused purchase is not an approval and does not count against a limit. Revocation is immediate and survives a restart.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">What happens if the customer never answers?</p>
+    <p class="a">Nothing is sent. We measured the live API: an unanswered purchase moves to <code>timed_out</code> on its own at exactly 120 seconds.</p>
+    <p class="a">A decline we submitted because nobody replied would be recorded as <em>the customer's</em> decision when they never made one &mdash; which the guide explicitly forbids. Lapsing is the absence of an answer, not an answer.</p>
+    <span class="ev">Evidence: measured live, t+0 awaiting_customer, t+120 timed_out</span>
+  </div>
+
+  <div class="qa">
+    <p class="q">Why can a policy only be tightened? What if I want to raise my limit?</p>
+    <p class="a">The platform requires it &mdash; a PATCH must keep every existing rule. But the real guarantee is conjunction: every rule ANDs, so an addition can only remove purchases from the allowed set.</p>
+    <p class="a">Adding &ldquo;under CHF 200&rdquo; on top of &ldquo;under CHF 120&rdquo; therefore does not raise the limit. 120 still binds. We tell the customer that explicitly rather than let them believe otherwise. To genuinely relax it, you revoke and authorise a new policy.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">Why does it ask the customer questions before confirming?</p>
+    <p class="a">Because some things the sentence does not settle. &ldquo;A shop I use regularly&rdquo; has no field in the event &mdash; somebody has to decide whether that means one past purchase or five, and that somebody is the customer.</p>
+    <p class="a">We also raise a gap the instructions never mention but the data does: two orders minutes apart can each sit under a per-order cap while together clearing it.</p>
+  </div>
+</section>
+
+<section class="break">
+  <p class="num">Group E</p>
+  <hr class="rule">
+  <h2>Engineering and architecture</h2>
+
+  <div class="qa">
+    <p class="q">Why is the UI a separate service?</p>
+    <p class="a">Viseca said they intend to fold wallet control into the existing <em>one</em> app while the decision runs in the backend under a hard latency ceiling. Those are opposite requirements &mdash; one is interactive and redeployed freely, the other is a hot path measured in milliseconds.</p>
+    <p class="a">We kept them as separate deployables from the first commit, and verified by grepping the import graph that the engine never imports from the control plane.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">Would this scale?</p>
+    <p class="a">The engine is a pure function with no I/O, so it scales horizontally with no coordination. Two things would not scale as written: familiarity loads all 4,701 history rows at import and should be a query, and the control session is a JSON file rather than a database.</p>
+    <p class="a">Both are prototype decisions we would change, not design flaws.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">What is your latency headroom really?</p>
+    <p class="a">Worst measured decision is 0.479 ms against 8,000 ms. Parsing costs more than deciding &mdash; 0.744 ms &mdash; because we validate twice, against the platform's own schema and then our types.</p>
+    <p class="a">The eight seconds start when the purchase is <em>queued</em>, not when we poll, so the real headroom is always less than eight. That is precisely why the model is off.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">What happens if the sandbox goes down mid-run?</p>
+    <p class="a">The worker keeps polling; a 204 is not the end of a run. A purchase delivered twice gets its saved answer re-sent rather than recomputed, so a retry cannot charge a limit twice. And the decision journal is append-only, so a restart rebuilds spend totals rather than handing the agent a fresh budget.</p>
+    <p class="a">What we have not built is reconciliation through <code>/v1/events</code>. That is on the gap list.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">How many tests, and what do they actually cover?</p>
+    <p class="a">301. They are not coverage-driven &mdash; each one pins a specific way the system could go wrong. That money is Decimal and not float. That &ldquo;unknown&rdquo; never becomes &ldquo;yes&rdquo;. That a broken model gives identical decisions to no model. That answering a paused purchase does not put it back in the inbox.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">What would you build next, with another day?</p>
+    <p class="a">Reconciliation through the events feed, so a network drop mid-run recovers cleanly instead of relying on redelivery. Then replacing the two tuned constants &mdash; familiarity at one prior purchase, a three-hour duplicate window &mdash; with something derived rather than chosen.</p>
+  </div>
+</section>
+
+<section class="break">
+  <p class="num">Group F</p>
+  <hr class="rule">
+  <h2>Harder and more sceptical</h2>
+
+  <div class="qa hostile">
+    <p class="q">This is mostly regular expressions. Is that really a solution?</p>
+    <p class="a">For the part that gates spending, yes, and deliberately. The compiler's output is a security boundary: a model that can be nudged into emitting &ldquo;under 900&rdquo; instead of &ldquo;under 200&rdquo; is a hole.</p>
+    <p class="a">It also has to be deterministic. A customer confirming a policy is agreeing to <em>those</em> rules, so the same sentence must always compile the same way &mdash; and there is a test for that.</p>
+    <p class="a">The honest trade-off is that regex handles the phrasings we anticipated and misses others. The mitigation is that every extracted rule is shown back before confirmation, so a bad reading is visible rather than silent.</p>
+  </div>
+
+  <div class="qa hostile">
+    <p class="q">What is the weakest part of this system?</p>
+    <p class="a">The instruction compiler, for the reason above. We found two real bugs in it during the build: &ldquo;CHF 300 a week&rdquo; compiled to a per-order cap, which is a much weaker policy than the customer wrote; and &ldquo;never spend more than CHF 500&rdquo; produced no limit at all, because &ldquo;more than&rdquo; reads as a minimum.</p>
+    <p class="a">Both are fixed with regression tests. Both suggest there are others we have not hit.</p>
+  </div>
+
+  <div class="qa hostile">
+    <p class="q">You are using a fixed threshold for merchant familiarity. Isn't that arbitrary?</p>
+    <p class="a">Yes. One prior approved purchase is the reading that does not invent a relationship the history does not show, but it is a judgement, not a measurement. The three-hour duplicate window is the same.</p>
+    <p class="a">What we did instead of hiding it: the compiler explicitly asks the customer to set the familiarity threshold themselves, and flags it as an open question before they confirm.</p>
+  </div>
+
+  <div class="qa hostile">
+    <p class="q">Your demo only uses the five supplied scenarios. Does it work on anything else?</p>
+    <p class="a">The policy compiler takes any sentence &mdash; you can type one now and watch it compile. The decision engine reads only policy and purchase facts, and a test proves it ignores scenario identity entirely.</p>
+    <p class="a">What we cannot claim is coverage beyond 45 purchases. We have no other data.</p>
+  </div>
+
+  <div class="qa hostile">
+    <p class="q">How much of this did you write, versus generate?</p>
+    <p class="a">Answer this one straight and briefly, in whatever way is true for your team. Do not improvise it here.</p>
+    <p class="a">If the rules ask about AI assistance, disclosed assistance is a much smaller problem than assistance that looks concealed.</p>
+  </div>
+
+  <div class="qa hostile">
+    <p class="q">Show me it working on something you have not rehearsed.</p>
+    <p class="a">Yes &mdash; type any instruction into the box and it compiles live. Or run <code>leash policy "&lt;their sentence&gt;"</code> in the terminal.</p>
+    <p class="a">Be ready for it to mis-read an unusual phrasing. If it does, the right response is to point at the rules panel: &ldquo;that is exactly why we show every extracted rule back before anything is authorised.&rdquo;</p>
+    <span class="ev">Rehearse this. It is the most likely live-failure moment.</span>
+  </div>
+</section>
+
+<section class="break">
+  <p class="num">Reference</p>
+  <hr class="rule">
+  <h2>Numbers to have ready</h2>
+  <table>
+    <thead><tr><th>Figure</th><th class="n">Value</th></tr></thead>
+    <tbody>
+      <tr><td>Purchases answered on the live API</td><td class="n">45</td></tr>
+      <tr><td>Approved / declined / asked</td><td class="n">17 / 23 / 5</td></tr>
+      <tr><td>Slowest decision, live</td><td class="n">2.88 ms</td></tr>
+      <tr><td>Slowest decision, 200-run profile</td><td class="n">0.479 ms</td></tr>
+      <tr><td>Platform budget</td><td class="n">8,000 ms</td></tr>
+      <tr><td>Parse and validate</td><td class="n">0.744 ms</td></tr>
+      <tr><td>Index 4,701 history rows, once</td><td class="n">23.7 ms</td></tr>
+      <tr><td>Model latency, median</td><td class="n">1,191 ms</td></tr>
+      <tr><td>Decision with model, worst</td><td class="n">4,716 ms (59% of budget)</td></tr>
+      <tr><td>Model cost per call</td><td class="n">$0.000043</td></tr>
+      <tr><td>Model cost, 1,000 full runs</td><td class="n">$1.93</td></tr>
+      <tr><td>Decisions changed by the model</td><td class="n">none</td></tr>
+      <tr><td>Tests</td><td class="n">301</td></tr>
+      <tr><td>Injection signatures</td><td class="n">6</td></tr>
+      <tr><td>Cart lines flagged, of 56</td><td class="n">2</td></tr>
+      <tr><td>Policy fields in the closed namespace</td><td class="n">19</td></tr>
+      <tr><td>Lookalike similarity, PixelHarbour</td><td class="n">96%</td></tr>
+      <tr><td>Human answering window</td><td class="n">120 s</td></tr>
+      <tr><td>Platform redelivery</td><td class="n">3 s</td></tr>
+    </tbody>
+  </table>
+
+  <div class="rulecard"><b>If you do not know the answer</b><span>&ldquo;I don't know &mdash; that's not something we measured.&rdquo; Then say what you would measure. Judges have seen every variety of bluff.</span></div>
+  <div class="rulecard"><b>If a demo breaks live</b><span>&ldquo;Let me show you the offline replay &mdash; same engine, same answers.&rdquo; Then run <code>make demo</code>. It needs no network.</span></div>
+  <div class="rulecard"><b>If they challenge a decline</b><span>Expand the findings panel. Every decline names the rule it breached and the customer's own words that produced it.</span></div>
+
+  <div class="foot">
+    <span>Agent on a Leash &middot; Team PrismAI</span>
+    <span>Questions we expect</span>
+  </div>
+</section>
+
+</body>
+</html>

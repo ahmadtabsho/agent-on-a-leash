@@ -22,6 +22,12 @@ script when the numbers change, not the file.
 with a supersampled edge — the originals range from 200×302 to 1600×1600, so
 they could not be dropped in as-is.
 
+## Speaker notes
+
+Every slide carries notes: what to say, what to point at, and what not to
+elaborate on. They show in PowerPoint's presenter view, Canva's notes panel,
+and print via **File → Print → Notes Pages**.
+
 ## Fonts
 
 The deck asks for **IBM Plex Sans** and **IBM Plex Mono**, which Canva has. If
@@ -40,8 +46,9 @@ a viewer lacks them it substitutes silently and the layout still holds.
 | 7 | Results: all 45 purchases, answered live |
 | 8 | Who is in charge: the customer keeps the leash |
 | 9 | The optional model: built, measured, switched off |
-| 10 | The team |
-| 11 | Closing |
+| 10 | Cost per stage, measured |
+| 11 | The team |
+| 12 | Closing |
 
 The deck and [`docs/report/`](../docs/report/) carry the same numbers from the
 same source. When a figure changes, rerun both.

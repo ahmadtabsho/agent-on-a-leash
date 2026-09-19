@@ -492,8 +492,100 @@
   </div>
 </section>
 
+
 <section class="break">
-  <p class="num">06 &mdash; Results</p>
+  <p class="num">06 &mdash; Cost of every stage</p>
+  <hr class="rule">
+  <h2>Where the time and the money actually go</h2>
+  <p class="lede">Measured on this machine, not estimated: median and worst of 200 consecutive runs of each stage, against SCEN0004 which is the heaviest scenario.</p>
+
+  <h3>The deterministic path</h3>
+  <table>
+    <thead><tr><th>Stage</th><th class="n">Median</th><th class="n">Worst</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>1 &nbsp; Parse and validate</td><td class="n">0.744 ms</td><td class="n">1.073 ms</td><td>Two gates: the platform's JSON schema, then strict typed models</td></tr>
+      <tr><td>3 &nbsp; Sanitise one cart line</td><td class="n">0.064 ms</td><td class="n">0.189 ms</td><td>Six injection signatures plus fact extraction</td></tr>
+      <tr><td>&nbsp; &nbsp; Build all fact resolvers</td><td class="n">0.075 ms</td><td class="n">0.103 ms</td><td>Includes familiarity lookups against the history index</td></tr>
+      <tr><td>2&ndash;7 &nbsp; The whole decision</td><td class="n">0.172 ms</td><td class="n">0.479 ms</td><td>Everything except parsing</td></tr>
+    </tbody>
+  </table>
+  <p>Parsing costs roughly four times as much as deciding. Validating twice against the published contract is the single most expensive thing in the hot path, and it is still under a millisecond. We consider that a good trade: a message we cannot fully read is never decided on.</p>
+
+  <table>
+    <thead><tr><th>One-off, at process start</th><th class="n">Cost</th><th>Frequency</th></tr></thead>
+    <tbody>
+      <tr><td>Index 4,701 history rows</td><td class="n">23.7 ms</td><td>Once per process</td></tr>
+      <tr><td>Compile a policy from a sentence</td><td class="n">0.631 ms</td><td>Once, before the customer confirms &mdash; the 8-second budget does not apply</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Where a language model is used, and where it deliberately is not</h3>
+  <table>
+    <thead><tr><th class="n">Stage</th><th>What it does</th><th>Model?</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><td>Parse and validate</td><td>No &mdash; schema and types</td></tr>
+      <tr><td class="n">2</td><td>Preconditions</td><td>No &mdash; status fields</td></tr>
+      <tr><td class="n">3</td><td>Sanitise merchant text</td><td><strong>No, on purpose</strong></td></tr>
+      <tr><td class="n">4</td><td>Hard rules</td><td>No &mdash; Decimal comparison</td></tr>
+      <tr><td class="n">5</td><td>Intent match</td><td><strong>Optional advisor</strong></td></tr>
+      <tr><td class="n">6</td><td>Behavioural signals</td><td>No &mdash; arithmetic over history</td></tr>
+      <tr><td class="n">7</td><td>Resolve</td><td>No &mdash; boolean</td></tr>
+      <tr><td class="n">&mdash;</td><td>Policy drafting, before any purchase</td><td><strong>Optional clarifier</strong></td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <p><b>Stage 3 has no model, and that is the deliberate part.</b></p>
+    <p>Using a language model to detect prompt injection means feeding attacker-controlled text to a model whose output then influences a decision &mdash; which is the exact vulnerability the challenge is testing. A regular expression can only ever emit a number or a token, so there is no phrasing that turns into a permission. The scanner also holds no reference to the policy, so there is no code path from merchant text to the verdict at all.</p>
+  </div>
+
+  <h3>What the model costs</h3>
+  <p>Measured against OpenRouter with <code>openai/gpt-4o-mini</code>, five consecutive calls with the real prompt:</p>
+  <table>
+    <thead><tr><th>Measure</th><th class="n">Value</th></tr></thead>
+    <tbody>
+      <tr><td>Latency, median</td><td class="n">1,191 ms</td></tr>
+      <tr><td>Latency, range</td><td class="n">634 &ndash; 1,454 ms</td></tr>
+      <tr><td>Our hard timeout</td><td class="n">2,000 ms</td></tr>
+      <tr><td>Tokens per call</td><td class="n">210 in / 19 out</td></tr>
+      <tr><td>Cost per call</td><td class="n">$0.0000429</td></tr>
+      <tr><td>Cost for all 45 purchases</td><td class="n">$0.0019</td></tr>
+      <tr><td>Cost for 1,000 full runs</td><td class="n">$1.93</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The comparison that settled the default</h3>
+  <p>The same 200-run profile, on the same machine, with only the feature flag changed:</p>
+  <table>
+    <thead><tr><th>Stage</th><th class="n">Model off</th><th class="n">Model on</th></tr></thead>
+    <tbody>
+      <tr><td>Parse and validate</td><td class="n">0.744 ms</td><td class="n">0.770 ms</td></tr>
+      <tr><td>Sanitise a cart line</td><td class="n">0.064 ms</td><td class="n">0.062 ms</td></tr>
+      <tr><td>Build fact resolvers</td><td class="n">0.075 ms</td><td class="n">0.074 ms</td></tr>
+      <tr><td><strong>The whole decision, median</strong></td><td class="n"><strong>0.172 ms</strong></td><td class="n"><strong>2,141 ms</strong></td></tr>
+      <tr><td><strong>The whole decision, worst</strong></td><td class="n"><strong>0.479 ms</strong></td><td class="n"><strong>4,716 ms</strong></td></tr>
+      <tr><td>Decisions changed</td><td class="n">&mdash;</td><td class="n">none</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <p><b>4,716 ms is 59% of the platform's budget, for no change in outcome.</b></p>
+    <p>Every other stage is unmoved, so the model is the only variable. And the eight seconds start when the purchase is <em>queued</em>, not when we poll for it &mdash; so on a slow network the real headroom is already less than eight seconds before our decision begins.</p>
+    <p>The money is irrelevant: four hundredths of a cent per call, under two dollars for a thousand full runs. The latency is not. That is why the advisor ships off by default, with a test asserting that a broken model produces decisions identical to no model at all.</p>
+  </div>
+
+  <h3>Where that leaves the latency budget</h3>
+  <table>
+    <thead><tr><th>Configuration</th><th class="n">Worst decision</th><th class="n">Budget used</th><th>Recommended for</th></tr></thead>
+    <tbody>
+      <tr><td>Deterministic only</td><td class="n">0.479 ms</td><td class="n">0.006%</td><td>The live API, judging, production</td></tr>
+      <tr><td>With the advisor</td><td class="n">4,716 ms</td><td class="n">59%</td><td>Local demonstration only, where no platform deadline applies</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="break">
+  <p class="num">07 &mdash; Results</p>
   <hr class="rule">
   <h2>All 45 purchases on the live API</h2>
   <table>
@@ -521,7 +613,7 @@
 </section>
 
 <section class="break">
-  <p class="num">07 &mdash; Anticipated questions</p>
+  <p class="num">08 &mdash; Anticipated questions</p>
   <hr class="rule">
   <h2>What judges are likely to ask</h2>
 
@@ -546,7 +638,7 @@
   <div class="qa"><b>&ldquo;Would this scale?&rdquo;</b>
     <p>The engine is a pure function with no I/O, so it scales horizontally without coordination. Two things would not: familiarity currently loads all 4,701 history rows at import and should be a query, and the control session is a JSON file rather than a database.</p></div>
 
-  <p class="num" style="margin-top:8mm">08 &mdash; Presentation</p>
+  <p class="num" style="margin-top:8mm">09 &mdash; Presentation</p>
   <hr class="rule">
   <h2>The three-minute path</h2>
   <table>

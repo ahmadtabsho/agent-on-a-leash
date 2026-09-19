@@ -45,8 +45,11 @@ class Settings:
     api_key: str | None
     decision_budget_ms: int
     llm_enabled: bool
-    llm_model: str
-    llm_timeout_ms: int
+    # Defaults so a caller that does not care about the advisor — every test of
+    # the decision path — need not name it.
+    llm_provider: str = "openrouter"
+    llm_model: str = "openai/gpt-4o-mini"
+    llm_timeout_ms: int = 2000
     # Shortens the customer's answering window for demonstration only. None
     # means use whatever the platform reports, which is the truthful default.
     human_timeout_override_s: float | None = None
@@ -63,7 +66,8 @@ class Settings:
             decision_budget_ms=_int_env("LEASH_DECISION_BUDGET_MS", 2500),
             llm_enabled=os.environ.get("LEASH_LLM_ENABLED", "").lower()
             in {"1", "true", "yes"},
-            llm_model=os.environ.get("LEASH_LLM_MODEL", "claude-haiku-4-5-20251001"),
-            llm_timeout_ms=_int_env("LEASH_LLM_TIMEOUT_MS", 900),
+            llm_provider=os.environ.get("LEASH_LLM_PROVIDER", "openrouter").strip().lower(),
+            llm_model=os.environ.get("LEASH_LLM_MODEL", "openai/gpt-4o-mini"),
+            llm_timeout_ms=_int_env("LEASH_LLM_TIMEOUT_MS", 2000),
             human_timeout_override_s=_float_env("LEASH_HUMAN_TIMEOUT_SECONDS", None),
         )

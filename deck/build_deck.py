@@ -219,22 +219,22 @@ def slide_title(prs):
 
     text(s, "Team PrismAI", left=MARGIN, top=Inches(5.74), width=Inches(6),
          height=Inches(0.4), size=15, color=WHITE, font=HEAD, bold=True)
-    text(s, "Ahmad Tabsho · Wictor Łażewski · Simon Markiewicz · Tacdin Ozmen",
+    text(s, "Ahmad Tabsho · Wiktor Łażewski · Simon Markiewicz · Tacdin Ozmen",
          left=MARGIN, top=Inches(6.12), width=Inches(9), height=Inches(0.36),
          size=12.5, color=FAINT, font=MONO)
 
     # Live result, stated up front rather than saved for the end.
     box = panel(s, W - MARGIN - Inches(3.5), Inches(2.3), Inches(3.5), Inches(2.5))
-    text(s, "LIVE ON THE SANDBOX", left=W - MARGIN - Inches(3.16), top=Inches(2.62),
+    text(s, "ANSWERED ON THE LIVE API", left=W - MARGIN - Inches(3.16), top=Inches(2.62),
          width=Inches(3), height=Inches(0.3), size=9.5, color=ACCENT, font=MONO,
          caps=True, char_space=1.3)
     text(s, "45", left=W - MARGIN - Inches(3.16), top=Inches(3.0), width=Inches(3),
          height=Inches(0.8), size=44, color=WHITE, font=HEAD, bold=True)
     text(s, "purchases decided", left=W - MARGIN - Inches(3.16), top=Inches(3.72),
          width=Inches(3), height=Inches(0.3), size=11.5, color=MUTED, font=MONO)
-    text(s, "2.88 ms  slowest\n8000 ms  allowed",
+    text(s, "2.88 ms  slowest\n8000 ms  allowed\n    299  tests",
          left=W - MARGIN - Inches(3.16), top=Inches(4.12), width=Inches(3),
-         height=Inches(0.6), size=11.5, color=MUTED, font=MONO, spacing=1.3)
+         height=Inches(0.8), size=11.5, color=MUTED, font=MONO, spacing=1.3)
     _ = box
     return s
 
@@ -474,7 +474,7 @@ def slide_results(prs):
     panel(s, Inches(9.6), Inches(3.02), Inches(2.95), Inches(3.4))
     stat(s, "2.88 ms", "slowest decision", Inches(9.92), Inches(3.32), width=Inches(2.4))
     stat(s, "8000 ms", "platform allows", Inches(9.92), Inches(4.42), width=Inches(2.4), colour=MUTED)
-    stat(s, "259", "tests passing", Inches(9.92), Inches(5.5), width=Inches(2.4), colour=ACCENT)
+    stat(s, "299", "tests passing", Inches(9.92), Inches(5.5), width=Inches(2.4), colour=ACCENT)
     footer(s, "07")
     return s
 
@@ -511,6 +511,52 @@ def slide_control(prs):
     return s
 
 
+def slide_model(prs):
+    """Where the AI is — and why it is switched off."""
+    s = slide(prs)
+    eyebrow(s, "The optional model")
+    title(s, "We built the hook, then measured it")
+    standfirst(s, "The brief permits language models in the decision path and requires the system "
+                  "to stay predictable when they fail. So we made it switchable, and checked whether "
+                  "it earns its place.", top=Inches(2.02), width=Inches(10.6))
+
+    # the measurement
+    panel(s, MARGIN, Inches(3.06), Inches(6.6), Inches(2.6))
+    text(s, "MEASURED ON OPENROUTER, GPT-4O-MINI", left=MARGIN + Inches(0.32), top=Inches(3.3),
+         width=Inches(5.4), height=Inches(0.3), size=9.5, color=ACCENT, font=MONO,
+         caps=True, char_space=1.2)
+
+    rows = [("Slowest decision, model off", "0.97 ms", OK),
+            ("Slowest decision, model on", "3,102 ms", STOP),
+            ("Share of the 8,000 ms budget", "39%", STOP),
+            ("Decisions changed", "none", MUTED)]
+    for index, (label, value, colour) in enumerate(rows):
+        y = Inches(3.72) + index * Inches(0.47)
+        text(s, label, left=MARGIN + Inches(0.32), top=y, width=Inches(4.0),
+             height=Inches(0.32), size=13.5, color=MUTED)
+        text(s, value, left=MARGIN + Inches(4.5), top=y, width=Inches(1.8),
+             height=Inches(0.32), size=14, color=colour, font=MONO, bold=True,
+             align=PP_ALIGN.RIGHT)
+
+    box = panel(s, Inches(7.86), Inches(3.06), Inches(4.7), Inches(2.6), fill=PANEL, outline=ACCENT)
+    text(s, "WHY IT IS OFF", left=Inches(8.18), top=Inches(3.3), width=Inches(4.1),
+         height=Inches(0.3), size=9.5, color=ACCENT, font=MONO, caps=True, char_space=1.2)
+    text(s, "A 3,200× latency increase for identical outcomes.\n\n"
+            "The advisor answers one question, never sees the policy, and can only raise "
+            "doubt — never grant permission.\n\n"
+            "A broken model gives the same decisions as no model.",
+         left=Inches(8.18), top=Inches(3.72), width=Inches(4.1), height=Inches(1.7),
+         size=11.5, color=MUTED, spacing=1.3)
+    _ = box
+
+    text(s, "The AI here is the thing being controlled, not the thing doing the controlling. "
+            "Putting a model in the path that gates spending would be the vulnerability.",
+         left=MARGIN, top=Inches(5.98), width=Inches(11.6), height=Inches(0.6),
+         size=14, color=WHITE, font=HEAD, spacing=1.3)
+    footer(s, "09")
+    return s
+
+
 def slide_team(prs):
     s = slide(prs)
     eyebrow(s, "Team PrismAI")
@@ -520,7 +566,7 @@ def slide_team(prs):
         ("ahmad.png", "Ahmad Tabsho",
          "Natural-language policy compiler, prompt-injection defence filters, and the "
          "lightweight LLM advisory layer with hard timeouts and fallback logic."),
-        ("wictor.png", "Wictor Łażewski",
+        ("wictor.png", "Wiktor Łażewski",
          "Offline replay harness over the synthetic datasets, the live sandbox API client, "
          "and latency benchmarking to stay well under platform thresholds."),
         ("simon.png", "Simon Markiewicz",
@@ -550,7 +596,7 @@ def slide_team(prs):
              width=Inches(0.7), color=ACCENT, weight=1.6)
         text(s, role, left=left, top=Inches(4.94), width=col_w, height=Inches(1.7),
              size=11.5, color=MUTED, align=PP_ALIGN.CENTER, spacing=1.34)
-    footer(s, "09")
+    footer(s, "10")
     return s
 
 
@@ -588,6 +634,7 @@ def build() -> Path:
     slide_injection(prs)
     slide_results(prs)
     slide_control(prs)
+    slide_model(prs)
     slide_team(prs)
     slide_close(prs)
     prs.save(OUT)

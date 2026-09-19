@@ -39,5 +39,9 @@ a viewer lacks them it substitutes silently and the layout still holds.
 | 6 | Demo: the shop tries to give us orders |
 | 7 | Results: all 45 purchases, answered live |
 | 8 | Who is in charge: the customer keeps the leash |
-| 9 | The team |
-| 10 | Closing |
+| 9 | The optional model: built, measured, switched off |
+| 10 | The team |
+| 11 | Closing |
+
+The deck and [`docs/report/`](../docs/report/) carry the same numbers from the
+same source. When a figure changes, rerun both.

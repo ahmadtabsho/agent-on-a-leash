@@ -36,3 +36,7 @@ ui/dist/
 
 # Live run journals
 runs/
+
+# rendered page images from doc builds
+docs/report/*.png
+deck/preview/

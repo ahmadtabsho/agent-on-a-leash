@@ -9,7 +9,9 @@ Companion documents:
 - [`pipeline.html`](pipeline.html) — why each stage exists, in detail
 - [`../ARCHITECTURE.md`](../ARCHITECTURE.md) — the same pipeline, condensed
 
-**Size:** 5,201 lines of Python across 22 modules, 214 tests.
+**Size:** 5,814 lines of Python across 35 modules, 259 tests.
+
+**Status:** running live against the Viseca sandbox; all 45 purchases answered.
 
 ---
 
@@ -156,14 +158,15 @@ Ordered by how much it would cost if it bit during judging.
 
 ### Would actually hurt
 
-**Nothing has run against the live API.**
-Every endpoint is written and tested against a mocked transport, but only
-`/healthz` has been hit for real. Unknown: the exact envelope shape the sandbox
-sends, whether `204` behaves as documented, and how the engine holds up under
-real deadline pressure.
+**~~Nothing has run against the live API.~~** *(Done.)*
+All 45 purchases are answered against the real service, with zero parse
+failures and zero missed deadlines. First contact found that the base URL in
+the challenge docs is not the live one, and that `event_id` arrives as an
+integer where the written contract gives it no type — which rejected every
+purchase until fixed. A real captured envelope is now a test fixture.
 
-> First thing on event day: `make health`, then `make worker` against
-> `SCEN0000`, before anything else.
+> `leash run --scenario SCEN0004` does the whole sequence: compile, store,
+> confirm, start, decide, resolve.
 
 **~~The control session is in-memory.~~** *(Built.)*
 The mandate, the inbox, the runs and the journal are written to
@@ -204,9 +207,14 @@ I lower my limit mid-run?" gets a curl command rather than a button.
 
 ### Known and deliberate
 
-**The advisor has never called a real model.**
-Every failure path is tested; the happy path against a live endpoint is not.
-It is off by default, so this only matters if you want to demo it.
+**~~The advisor has never called a real model.~~** *(Done — and the measurement
+argues for leaving it off.)*
+Three providers are supported: OpenRouter, OpenAI and Anthropic, differing only
+in endpoint and auth. Measured against OpenRouter with `openai/gpt-4o-mini`:
+it answered 4 of 5 intent questions correctly, dropped the fifth on timing, and
+**changed not one decision** across SCEN0002 and SCEN0004. The cost was the
+slowest decision rising from 0.88 ms to 2,167 ms — roughly a quarter of the
+platform's 8-second budget, for no change in outcome.
 
 **`GET /v1/events` is unused.**
 The client method exists but nothing calls it. It would matter for reconciling

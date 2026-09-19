@@ -167,11 +167,19 @@ class DecisionEngine:
         if not matched or len(matched) == len(event.authorization.items) == 0:
             return
 
+        # One budget for the whole event, not one per line. A three-line basket
+        # asking three times could spend three timeouts and eat the deadline.
+        spent_ms = 0.0
+        budget_ms = float(self.advisor.settings.llm_timeout_ms)
+
         for item in matched:
+            if spent_ms >= budget_ms:
+                return
             result = self.advisor.compare(requested, item.item_name, item.item_category)
             if result is None:
                 # Unavailable, slow, or unusable. The deterministic answer stands.
                 return
+            spent_ms += result.elapsed_ms
             if result.advice is Advice.MATCH:
                 continue
             ledger.add(

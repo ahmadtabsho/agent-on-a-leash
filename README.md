@@ -23,14 +23,17 @@ These are the constraints the challenge grades on, and they shape every module:
 1. **The customer holds the leash.** A mandate is drafted, shown back in plain
    language, and only becomes active once confirmed. It can be tightened or
    revoked at any time. Neither the agent nor the shop can change it.
+   Ambiguities that prevent safe compilation must be answered first; the
+   revised instruction and rules are shown again before confirmation.
 2. **Merchant text is untrusted input.** `item_details` is mined for product
    facts (size, return window) and scanned for injection. It can never alter a
    rule. A purchase carrying an instruction aimed at the decision engine is
    evidence *against* that purchase, never for it.
 3. **Deterministic core, advisory model.** Rules, limits and signals decide.
-   An optional small language model only advises on fuzzy intent matching, under
-   a hard timeout. If it is slow, wrong-shaped or absent, the engine still
-   returns the same class of answer.
+   An optional small language model advises on fuzzy intent matching and may
+   rewrite a code-generated clarification question under a hard timeout. Code
+   still chooses when to ask and the only answers allowed. If the model is
+   slow, wrong-shaped or absent, a deterministic question is used.
 4. **No answer key.** Nothing keys off a scenario ID, request ID or position in
    the sequence. The engine sees only policy plus purchase facts.
 5. **Decoupled UI and engine.** They deploy and scale independently, per Viseca's
@@ -82,6 +85,32 @@ make setup               # create the venv and install the engine
 make check               # verify the vendored data pack against its manifest
 make test                # run the suite
 ```
+
+Optional intent and clarification wording uses OpenRouter with the lightweight
+`google/gemini-2.5-flash-lite` model. Put an OpenRouter key in `.env` to enable
+it; without a key the same decisions and code-generated questions still work:
+
+```bash
+LEASH_LLM_ENABLED=true
+LEASH_LLM_MODEL=google/gemini-2.5-flash-lite
+OPENROUTER_API_KEY=sk-or-v1-...
+```
+
+During policy drafting, code identifies unexecutable ambiguity such as a
+spending minimum. Gemini phrases the question and, after the customer answers,
+rewrites the instruction. The deterministic compiler rebuilds the rules and
+the customer reviews and confirms that new draft before it can take effect.
+Known contradictions also block confirmation: incompatible categories,
+uncertainty behavior, quantities, countries or merchants; a rolling limit
+below the per-purchase limit; and recurring purchases combined with a ban on
+subscriptions.
+
+The interface's **Demo settings** panel can turn AI assistance and the
+expandable **Where AI was used** details on or off. It can also simulate a
+timeout, invalid response, or missing key. In every failure mode, known policy
+conflicts stay blocked and purchase uncertainty still produces a deterministic
+question. Editing and redrafting the instruction remains available when Gemini
+cannot rewrite it.
 
 Check any JSON file against the published event contract, or see what an
 instruction compiles to:

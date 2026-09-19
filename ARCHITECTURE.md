@@ -36,6 +36,16 @@ reads beyond what it is handed, no I/O. That is what makes it fast, testable
 offline against all 45 attempts, and unable to be talked out of a decision by
 anything a merchant writes.
 
+Policy authoring is outside that hot path. The compiler first extracts rules
+and questions. Questions caused by an unexecutable clause block confirmation.
+It also proves a bounded set of contradictions in code, including conflicting
+categories, uncertainty instructions, quantities, countries, merchants,
+amount limits, and recurring-purchase instructions. These checks do not depend
+on model availability.
+An optional model may phrase the question and rewrite the instruction from the
+customer's answer, but the result is compiled and shown as a new draft. Only
+the customer's later confirmation activates it.
+
 ## How a decision is produced
 
 The stages run in order and the first one to reach a verdict wins. Every stage
@@ -80,13 +90,17 @@ appends to a shared evidence list, so the output explains itself.
    `merchant_id`: a name is the one thing an impostor controls.
 7. **Resolve.** Clear pass with no open questions is an `approve`. A definite
    breach is a `decline`. Anything the engine cannot settle falls to the
-   customer's own `uncertainty_policy` (`ask`, `decline`, or `approve`).
+   customer's own `uncertainty_policy` (`ask`, `decline`, or `approve`). A
+   `step_up` includes a focused question and fixed approve/decline choices. An
+   optional model may rewrite that question from structured finding codes; it
+   never receives merchant prose or chooses the available actions.
 
 ## Failure behaviour
 
 | Failure | Behaviour |
 | --- | --- |
-| LLM slow, absent, or returns junk | Dropped. Stages 1-7 run unchanged and produce the decision. |
+| LLM slow, absent, or returns junk | Intent advice is dropped, clarification falls back to a code-generated question, and known policy conflicts remain blocked. |
+| Policy rewrite model unavailable | Keep the original draft blocked and ask the customer to edit and redraft it directly. |
 | Budget exhausted mid-evaluation | Return the safe verdict from the evidence gathered so far, never a timeout. |
 | Repeated delivery of a purchase | Recognised by live `authorization_id`; the saved result is re-sent and spend is not double-counted. |
 | Unparseable event | Escalate rather than guess. |

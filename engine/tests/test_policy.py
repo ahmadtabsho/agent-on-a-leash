@@ -187,6 +187,43 @@ def test_a_spending_floor_is_questioned_rather_than_inverted():
     assert any("minimum" in q for q in policy.open_questions)
 
 
+def test_more_than_amount_is_a_blocking_floor_not_an_upper_limit():
+    policy = compile_policy(
+        "Buy one ordinary grocery item for CHF 20 or less from a shop I use regularly. "
+        "Ask me when uncertain. More than CHF 30"
+    )
+    amount_rules = rules_for(policy, "authorization.billing_amount_chf")
+
+    assert [(rule.operator, rule.value) for rule in amount_rules] == [(Operator.LTE, 20.0)]
+    assert any(
+        question.startswith("Policy conflict:")
+        and "more than CHF 30" in question
+        and "caps the purchase at CHF 20" in question
+        for question in policy.open_questions
+    )
+
+
+@pytest.mark.parametrize(
+    ("instruction", "fragment"),
+    [
+        ("Buy only groceries. Also buy electronics.", "categories should actually be allowed"),
+        ("Ask me when uncertain. Decline when uncertain.", "both to ask and to decline"),
+        ("Buy one grocery item. Buy two grocery items.", "incompatible purchase quantities"),
+        ("Buy only in Switzerland. Also buy in Germany.", "which countries are allowed"),
+        ("Buy only from Migros. Also buy from Coop.", "which merchants are allowed"),
+        (
+            "Keep each order under CHF 100 and total weekly spend under CHF 50.",
+            "per-purchase limit",
+        ),
+        ("Allow no subscriptions. Buy a monthly software subscription.", "recurring purchases"),
+    ],
+)
+def test_known_policy_conflicts_are_blocking_questions(instruction, fragment):
+    policy = compile_policy(instruction)
+    conflicts = [q for q in policy.open_questions if q.startswith("Policy conflict:")]
+    assert any(fragment in question.lower() for question in conflicts), conflicts
+
+
 def test_a_non_chf_limit_is_flagged():
     policy = compile_policy("Buy books for up to EUR 40 each. Ask me when uncertain.")
     assert any("EUR" in q for q in policy.open_questions)

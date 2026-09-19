@@ -16,6 +16,7 @@ DEFAULT_BASE_URL = (
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = REPO_ROOT / "data"
 SCHEMA_DIR = DATA_DIR / "schemas"
+DEFAULT_LLM_MODEL = "google/gemini-2.5-flash-lite"
 
 
 def _int_env(name: str, default: int) -> int:
@@ -49,6 +50,6 @@ class Settings:
             decision_budget_ms=_int_env("LEASH_DECISION_BUDGET_MS", 2500),
             llm_enabled=os.environ.get("LEASH_LLM_ENABLED", "").lower()
             in {"1", "true", "yes"},
-            llm_model=os.environ.get("LEASH_LLM_MODEL", "claude-haiku-4-5-20251001"),
-            llm_timeout_ms=_int_env("LEASH_LLM_TIMEOUT_MS", 900),
+            llm_model=os.environ.get("LEASH_LLM_MODEL", DEFAULT_LLM_MODEL),
+            llm_timeout_ms=_int_env("LEASH_LLM_TIMEOUT_MS", 1200),
         )

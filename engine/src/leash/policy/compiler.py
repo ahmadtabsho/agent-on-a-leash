@@ -57,7 +57,11 @@ AT_MOST = re.compile(
     r"|below|under|maximum|max\b|at\s+most|cap(?:ped)?\s+at|not\s+exceed",
     re.IGNORECASE,
 )
-AT_LEAST = re.compile(r"or\s+more|or\s+longer|at\s+least|no\s+less\s+than|minimum|min\b", re.IGNORECASE)
+AT_LEAST = re.compile(
+    r"or\s+more|or\s+longer|at\s+least|no\s+less\s+than|more\s+than"
+    r"|greater\s+than|above|minimum|min\b",
+    re.IGNORECASE,
+)
 
 PER_PURCHASE = re.compile(r"each\s+order|per\s+order|per\s+purchase|any\s+one\s+order|each\s+purchase", re.IGNORECASE)
 
@@ -113,6 +117,25 @@ UNCERTAIN_ASK = re.compile(r"ask\s+me|check\s+with\s+me|confirm\s+with\s+me|paus
 UNCERTAIN_DECLINE = re.compile(r"(?:decline|refuse|block|reject)\s+(?:if|when|anything)\s+.{0,20}(?:uncertain|unsure|doubt)", re.IGNORECASE)
 
 DELIVERY = re.compile(r"\bfor\s+delivery\b|\bdelivered\b|\bdelivery\b", re.IGNORECASE)
+
+COUNTRY_ALIASES = {
+    "switzerland": "CH", "swiss": "CH",
+    "germany": "DE", "german": "DE",
+    "france": "FR", "french": "FR",
+    "italy": "IT", "italian": "IT",
+    "austria": "AT", "austrian": "AT",
+    "united kingdom": "GB", "uk": "GB", "great britain": "GB",
+    "united states": "US", "usa": "US",
+    "netherlands": "NL", "dutch": "NL",
+}
+NO_SUBSCRIPTIONS = re.compile(
+    r"\b(?:no|without|do not allow|don't allow|never)\s+(?:subscriptions?|recurring|repeating)\b",
+    re.IGNORECASE,
+)
+RECURRING_REQUEST = re.compile(
+    r"\b(?:subscribe|subscription|monthly|recurring|repeating|every month)\b",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -219,8 +242,22 @@ def _extract_amounts(text: str) -> tuple[list[CompiledRule], list[str], list[str
     rules: list[CompiledRule] = []
     guidance: list[str] = []
     questions: list[str] = []
+    clauses = _clauses(text)
+    purchase_caps: list[tuple[Currency, Decimal, str]] = []
 
-    for clause in _clauses(text):
+    # Collect the ordinary per-purchase caps first so a later spending floor
+    # can be explained as a contradiction rather than as an isolated oddity.
+    for candidate in clauses:
+        if PERIOD.search(candidate) or re.search(r"\bweekly\b", candidate, re.IGNORECASE):
+            continue
+        if AT_LEAST.search(candidate) and not AT_MOST.search(candidate):
+            continue
+        for match in MONEY.finditer(candidate):
+            raw = match.group("amt1") or match.group("amt2")
+            currency = Currency((match.group("cur1") or match.group("cur2")).upper())
+            purchase_caps.append((currency, _decimal(raw), candidate))
+
+    for clause in clauses:
         for match in MONEY.finditer(clause):
             raw = match.group("amt1") or match.group("amt2")
             currency = Currency((match.group("cur1") or match.group("cur2")).upper())
@@ -229,10 +266,22 @@ def _extract_amounts(text: str) -> tuple[list[CompiledRule], list[str], list[str
             if AT_LEAST.search(clause) and not AT_MOST.search(clause):
                 # A spending floor is not something an instruction normally
                 # means; surface it rather than inverting the customer's cap.
-                questions.append(
-                    f'"{clause.strip()}" reads as a minimum of {currency.value} {amount}. '
-                    "Did you mean that as a limit instead?"
-                )
+                conflicting_caps = [
+                    (cap, source) for cap_currency, cap, source in purchase_caps
+                    if cap_currency is currency and cap < amount
+                ]
+                if conflicting_caps:
+                    cap, source = min(conflicting_caps, key=lambda item: item[0])
+                    questions.append(
+                        f'Policy conflict: "{clause.strip()}" requires spending more than '
+                        f'{currency.value} {amount}, but "{source.strip()}" caps the purchase '
+                        f"at {currency.value} {cap}. Which amount rule should apply?"
+                    )
+                else:
+                    questions.append(
+                        f'"{clause.strip()}" reads as a minimum of {currency.value} {amount}. '
+                        "Did you mean that as a limit instead?"
+                    )
                 continue
 
             period = PERIOD.search(clause)
@@ -241,6 +290,8 @@ def _extract_amounts(text: str) -> tuple[list[CompiledRule], list[str], list[str
                 unit_days = DAYS_PER_UNIT[period.group("unit").lower()]
                 count = _number(period.group("count"))
                 days = unit_days * count if count else unit_days
+            elif re.search(r"\bweekly\b", clause, re.IGNORECASE):
+                days = 7
 
             if days:
                 rules.append(
@@ -576,6 +627,125 @@ def _uncertainty_policy(text: str) -> UncertaintyPolicy:
     return UncertaintyPolicy.ASK
 
 
+def _conflict_questions(text: str, policy: CompiledPolicy) -> list[str]:
+    """Known contradictions the compiler can prove or cannot represent safely."""
+    questions: list[str] = []
+    clauses = _clauses(text)
+
+    only_categories: set[str] = set()
+    other_categories: set[str] = set()
+    for clause in clauses:
+        categories = set(_category_words(clause, ITEM_CATEGORY_WORDS))
+        if re.search(r"\bonly\b", clause, re.IGNORECASE):
+            only_categories.update(categories)
+        else:
+            other_categories.update(categories)
+    outside = other_categories - only_categories
+    if only_categories and outside:
+        questions.append(
+            "Policy conflict: you said only " + ", ".join(sorted(only_categories))
+            + " may be bought, but also requested " + ", ".join(sorted(outside))
+            + ". Which categories should actually be allowed?"
+        )
+
+    if UNCERTAIN_ASK.search(text) and UNCERTAIN_DECLINE.search(text):
+        questions.append(
+            "Policy conflict: the instruction says both to ask and to decline when uncertain. "
+            "Which uncertainty behavior should apply?"
+        )
+
+    quantities: list[int] = []
+    for clause in clauses:
+        match = re.search(r"\bbuy\s+(?P<count>one|two|three|four|five|a|an|\d+)\s+", clause, re.IGNORECASE)
+        if not match:
+            continue
+        token = match.group("count").lower()
+        count = 1 if token in {"a", "an"} else _number(token)
+        if count is not None:
+            quantities.append(count)
+    if len(set(quantities)) > 1:
+        questions.append(
+            "Policy conflict: the instruction gives incompatible purchase quantities "
+            f"({', '.join(str(q) for q in sorted(set(quantities)))}). How many units are allowed?"
+        )
+
+    countries_by_clause: list[tuple[str, set[str]]] = []
+    for clause in clauses:
+        lowered = clause.lower()
+        countries = {
+            code for name, code in COUNTRY_ALIASES.items()
+            if re.search(rf"\b{re.escape(name)}\b", lowered)
+        }
+        if countries:
+            countries_by_clause.append((clause, countries))
+    only_countries = set().union(*(
+        countries for clause, countries in countries_by_clause
+        if re.search(r"\bonly\b", clause, re.IGNORECASE)
+    )) if countries_by_clause else set()
+    other_countries = set().union(*(
+        countries for clause, countries in countries_by_clause
+        if not re.search(r"\bonly\b", clause, re.IGNORECASE)
+    )) if countries_by_clause else set()
+    if only_countries and other_countries - only_countries:
+        questions.append(
+            "Policy conflict: the instruction restricts purchases to "
+            f"{', '.join(sorted(only_countries))} but also requests purchases in "
+            f"{', '.join(sorted(other_countries - only_countries))}. Which countries are allowed?"
+        )
+
+    named_merchants: list[tuple[str, str]] = []
+    for clause in clauses:
+        match = re.search(
+            r"\bfrom\s+(?:(?:shop|store|merchant|seller)\s+)?"
+            r"(?P<name>[A-Z][A-Za-z0-9&'-]*(?:\s+[A-Z][A-Za-z0-9&'-]*){0,2})",
+            clause,
+        )
+        if match and match.group("name").lower() not in COUNTRY_ALIASES:
+            named_merchants.append((clause, match.group("name")))
+    only_merchants = {
+        name for clause, name in named_merchants if re.search(r"\bonly\b", clause, re.IGNORECASE)
+    }
+    other_merchants = {
+        name for clause, name in named_merchants if not re.search(r"\bonly\b", clause, re.IGNORECASE)
+    }
+    if only_merchants and other_merchants - only_merchants:
+        questions.append(
+            "Policy conflict: the instruction says to use only "
+            f"{', '.join(sorted(only_merchants))} but also names "
+            f"{', '.join(sorted(other_merchants - only_merchants))}. Which merchants are allowed?"
+        )
+
+    purchase_limits = [
+        Decimal(str(rule.value)) for rule in policy.hard_rules
+        if rule.field == "authorization.billing_amount_chf" and rule.operator is Operator.LTE
+    ]
+    period_limits = [
+        (Decimal(str(rule.value)), rule.period_days) for rule in policy.hard_rules
+        if rule.field == "derived.spend_in_period_chf" and rule.operator is Operator.LTE
+    ]
+    if purchase_limits and period_limits:
+        purchase_max = max(purchase_limits)
+        for period_max, days in period_limits:
+            if period_max < purchase_max:
+                questions.append(
+                    "Policy conflict: the per-purchase limit is "
+                    f"CHF {purchase_max}, but the {days}-day total limit is only CHF {period_max}. "
+                    "Should the per-purchase limit be lowered?"
+                )
+
+    negative_recurring = any(NO_SUBSCRIPTIONS.search(clause) for clause in clauses)
+    positive_recurring = any(
+        RECURRING_REQUEST.search(clause) and not NO_SUBSCRIPTIONS.search(clause)
+        for clause in clauses
+    )
+    if negative_recurring and positive_recurring:
+        questions.append(
+            "Policy conflict: the instruction forbids subscriptions or recurring charges but also "
+            "requests one. Should recurring purchases be allowed?"
+        )
+    return questions
+
+
 def compile_policy(instruction: str) -> CompiledPolicy:
     """Compile a natural-language instruction into a confirmable policy."""
     text = instruction.strip()
@@ -603,6 +773,8 @@ def compile_policy(instruction: str) -> CompiledPolicy:
 
     if UNCERTAIN_ASK.search(text):
         policy.guidance.append("Anything we cannot settle is brought to you rather than guessed.")
+
+    policy.open_questions.extend(_conflict_questions(text, policy))
 
     # De-duplicate while keeping the order the customer's words produced.
     policy.guidance = list(dict.fromkeys(policy.guidance))

@@ -47,6 +47,7 @@ class SessionStore:
                 "instruction": session.compiled.instruction if session.compiled else None,
                 "pending": session.pending,
                 "lapsed": session.lapsed,
+                "settings": asdict(session.settings),
                 "runs": {
                     scenario_id: {k: v for k, v in run.items() if k != "state"}
                     for scenario_id, run in session.runs.items()

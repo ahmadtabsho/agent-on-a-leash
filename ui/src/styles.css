@@ -107,6 +107,29 @@ code {
 .block li { margin-bottom: 6px; }
 .questions { border-left: 3px solid var(--ask); background: var(--ask-bg); padding: 12px 14px; border-radius: 0 8px 8px 0; }
 .questions h3 { color: var(--ask); }
+.questions li { margin-bottom: 10px; }
+.questions .answer { min-height: 58px; margin-top: 7px; background: var(--surface); }
+.ai-tag {
+  display: inline-block; margin-left: 8px; padding: 1px 6px;
+  border: 1px solid var(--ask); border-radius: 999px; color: var(--ask);
+  font-size: 10px; font-weight: 650; text-transform: uppercase;
+}
+.ai-activity { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+.ai-activity summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+.ai-activity dl { margin: 10px 0 0; display: grid; gap: 5px; }
+.ai-activity dl div { display: grid; grid-template-columns: 120px 1fr; gap: 10px; }
+.ai-activity dt { color: var(--ink-2); font-size: 12px; }
+.ai-activity dd { margin: 0; font-size: 13px; }
+.settings-card > summary { cursor: pointer; font-weight: 650; }
+.setting-row, .setting-select {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 0; border-top: 1px solid var(--line);
+}
+.settings-card > summary + .setting-row { margin-top: 12px; }
+.setting-row span, .setting-select span { display: grid; }
+.setting-row small, .setting-select small { color: var(--ink-2); }
+.setting-row input { width: auto; }
+.setting-select select { width: min(250px, 45%); }
 
 .steps { list-style: none; padding: 0; margin: 0; }
 .step { border-top: 1px solid var(--line); padding: 12px 0; }
@@ -143,6 +166,8 @@ code {
 
 .inbox-item { border: 1px solid var(--ask); background: var(--ask-bg); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
 .inbox-item .amount { font-weight: 650; }
+.inbox-item .question { margin: 10px 0 4px; font-weight: 600; }
+.inbox-item .why { margin: 0; color: var(--ink-2); font-size: 13px; }
 .lines { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--ink-2); }
 
 .error { border-left: 3px solid var(--stop); background: var(--stop-bg); color: var(--stop); padding: 10px 14px; border-radius: 0 8px 8px 0; margin-bottom: 16px; font-size: 14px; }

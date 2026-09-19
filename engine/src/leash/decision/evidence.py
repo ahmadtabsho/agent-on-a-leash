@@ -67,6 +67,44 @@ class Finding:
         return payload
 
 
+@dataclass(frozen=True)
+class ClarificationChoice:
+    """One answer the customer may give to a focused purchase question."""
+
+    id: str
+    label: str
+    decision: Decision
+
+    def to_payload(self) -> dict:
+        return {"id": self.id, "label": self.label, "decision": self.decision.value}
+
+
+@dataclass(frozen=True)
+class Clarification:
+    """A bounded question produced for an uncertain purchase."""
+
+    question: str
+    finding_code: str
+    choices: tuple[ClarificationChoice, ...]
+    answer_scope: str = "purchase"
+    generated_by: str = "code"
+    latency_ms: float = 0.0
+    fallback_used: bool = True
+    status: str = "model_unavailable"
+
+    def to_payload(self) -> dict:
+        return {
+            "question": self.question,
+            "finding_code": self.finding_code,
+            "choices": [choice.to_payload() for choice in self.choices],
+            "answer_scope": self.answer_scope,
+            "generated_by": self.generated_by,
+            "latency_ms": round(self.latency_ms, 1),
+            "fallback_used": self.fallback_used,
+            "status": self.status,
+        }
+
+
 @dataclass
 class Verdict:
     """The engine's answer, with the reasoning attached."""
@@ -79,6 +117,7 @@ class Verdict:
     # Set when the customer's uncertainty_policy, rather than a definite
     # breach, produced this decision.
     fell_back_to_policy: UncertaintyPolicy | None = None
+    clarification: Clarification | None = None
     elapsed_ms: float = 0.0
 
     @property

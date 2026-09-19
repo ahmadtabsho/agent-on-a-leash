@@ -5,11 +5,15 @@ the tests here are mostly about failure: every broken model must produce the
 same decisions as no model at all.
 """
 
+import subprocess
+import sys
+
 import pytest
 
-from leash.config import Settings
+from leash.config import DEFAULT_LLM_MODEL, Settings
 from leash.decision import DecisionEngine, RunState
 from leash.llm import Advice, IntentAdvisor
+from leash.llm.advisor import _openrouter_completion
 from leash.models.enums import Decision
 from leash.policy import compile_policy
 from leash.replay import EventBuilder
@@ -19,7 +23,7 @@ ENABLED = Settings(
     api_key=None,
     decision_budget_ms=2500,
     llm_enabled=True,
-    llm_model="claude-haiku-4-5-20251001",
+    llm_model=DEFAULT_LLM_MODEL,
     llm_timeout_ms=900,
 )
 
@@ -40,6 +44,42 @@ def advisor_raising(exc: Exception) -> IntentAdvisor:
         raise exc
 
     return IntentAdvisor(ENABLED, completion)
+
+
+def test_llm_package_can_be_imported_before_the_decision_package():
+    result = subprocess.run(
+        [sys.executable, "-c", "from leash.llm import IntentAdvisor, ClarificationPlanner"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_openrouter_transport_uses_the_gemini_model_and_bearer_key(monkeypatch):
+    captured = {}
+
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"choices": [{"message": {"content": '{"verdict":"match"}'}}]}
+
+    def post(url, **kwargs):
+        captured.update(url=url, **kwargs)
+        return Response()
+
+    monkeypatch.setattr("httpx.post", post)
+    raw = _openrouter_completion(DEFAULT_LLM_MODEL, "secret")(
+        "system", "user", timeout_s=1.2
+    )
+
+    assert captured["url"] == "https://openrouter.ai/api/v1/chat/completions"
+    assert captured["headers"]["Authorization"] == "Bearer secret"
+    assert captured["json"]["model"] == "google/gemini-2.5-flash-lite"
+    assert captured["json"]["response_format"] == {"type": "json_object"}
+    assert raw == '{"verdict":"match"}'
 
 
 @pytest.fixture(scope="module")

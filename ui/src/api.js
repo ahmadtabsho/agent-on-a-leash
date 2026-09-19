@@ -19,10 +19,15 @@ async function request(path, options = {}) {
 
 export const api = {
   health: () => request('/health'),
+  settings: () => request('/settings'),
+  updateSettings: (settings) =>
+    request('/settings', { method: 'PUT', body: JSON.stringify(settings) }),
   preview: (instruction) =>
     request('/policy/preview', { method: 'POST', body: JSON.stringify({ instruction }) }),
   draft: (instruction) =>
     request('/policy/draft', { method: 'POST', body: JSON.stringify({ instruction }) }),
+  refine: (answers) =>
+    request('/policy/refine', { method: 'POST', body: JSON.stringify({ answers }) }),
   confirm: () =>
     request('/policy/confirm', { method: 'POST', body: JSON.stringify({ confirmed: true }) }),
   policy: () => request('/policy'),

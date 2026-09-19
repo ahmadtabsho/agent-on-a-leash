@@ -70,28 +70,30 @@ class Completion(Protocol):
     def __call__(self, system: str, user: str, *, timeout_s: float) -> str: ...
 
 
-def _anthropic_completion(model: str, api_key: str) -> Completion:
+def _openrouter_completion(model: str, api_key: str, *, max_tokens: int = 100) -> Completion:
     def call(system: str, user: str, *, timeout_s: float) -> str:
         import httpx
 
         response = httpx.post(
-            "https://api.anthropic.com/v1/messages",
+            "https://openrouter.ai/api/v1/chat/completions",
             timeout=timeout_s,
             headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
+                "Authorization": f"Bearer {api_key}",
                 "content-type": "application/json",
             },
             json={
                 "model": model,
-                "max_tokens": 100,
-                "system": system,
-                "messages": [{"role": "user", "content": user}],
+                "max_tokens": max_tokens,
+                "temperature": 0,
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
             },
         )
         response.raise_for_status()
-        blocks = response.json().get("content", [])
-        return "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+        return response.json()["choices"][0]["message"]["content"]
 
     return call
 
@@ -105,9 +107,9 @@ class IntentAdvisor:
         if self._completion is None and self.settings.llm_enabled:
             import os
 
-            key = os.environ.get("ANTHROPIC_API_KEY")
+            key = os.environ.get("OPENROUTER_API_KEY")
             if key:
-                self._completion = _anthropic_completion(self.settings.llm_model, key)
+                self._completion = _openrouter_completion(self.settings.llm_model, key)
 
     @property
     def available(self) -> bool:

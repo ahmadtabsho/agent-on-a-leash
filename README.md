@@ -18,7 +18,7 @@ declined, 5 sent back to the customer. No parse failures, no missed deadlines.
 Slowest decision 2.88 ms against an 8000 ms budget. Offline replay gives the
 same counts, which is the main reason we trust it.
 
-299 tests.
+301 tests.
 
 ## Quick start
 

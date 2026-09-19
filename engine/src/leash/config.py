@@ -18,6 +18,17 @@ DATA_DIR = REPO_ROOT / "data"
 SCHEMA_DIR = DATA_DIR / "schemas"
 
 
+def _float_env(name: str, default: float | None) -> float | None:
+    raw = os.environ.get(name)
+    if not raw:
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        return default
+    return value if value > 0 else default
+
+
 def _int_env(name: str, default: int) -> int:
     raw = os.environ.get(name)
     if not raw:
@@ -36,6 +47,9 @@ class Settings:
     llm_enabled: bool
     llm_model: str
     llm_timeout_ms: int
+    # Shortens the customer's answering window for demonstration only. None
+    # means use whatever the platform reports, which is the truthful default.
+    human_timeout_override_s: float | None = None
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -51,4 +65,5 @@ class Settings:
             in {"1", "true", "yes"},
             llm_model=os.environ.get("LEASH_LLM_MODEL", "claude-haiku-4-5-20251001"),
             llm_timeout_ms=_int_env("LEASH_LLM_TIMEOUT_MS", 900),
+            human_timeout_override_s=_float_env("LEASH_HUMAN_TIMEOUT_SECONDS", None),
         )

@@ -111,15 +111,26 @@ class Worker:
         self.human_timeout_seconds: float | None = None
 
     def adopt_timeouts(self) -> float | None:
-        """Read the human window from the service rather than assuming it."""
+        """Read the human window from the service rather than assuming it.
+
+        `LEASH_HUMAN_TIMEOUT_SECONDS` shortens it for demonstration, so a
+        lapse can be shown in seconds rather than two minutes of dead air. It
+        only ever shortens: the platform still times the purchase out on its
+        own schedule, so a longer local window would promise the customer time
+        they do not have.
+        """
+        override = self.settings.human_timeout_override_s
         try:
             timeouts = self.client.bootstrap().get("timeouts", {})
         except ApiError:
             # Reporting, not correctness. A run works without this.
-            return None
+            return self.settings.human_timeout_override_s
         value = timeouts.get("human_timeout_seconds")
         if isinstance(value, (int, float)) and value > 0:
             self.human_timeout_seconds = float(value)
+        if override:
+            reported = self.human_timeout_seconds
+            self.human_timeout_seconds = min(override, reported) if reported else override
         return self.human_timeout_seconds
 
     # --- one purchase ------------------------------------------------------

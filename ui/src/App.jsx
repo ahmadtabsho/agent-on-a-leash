@@ -420,7 +420,10 @@ export default function App() {
     guard(async () => {
       await api.resolve(authorizationId, decision)
       await refreshPending()
-      if (run) setRun(await api.run(run.scenario_id).catch(() => run))
+      // Read the run back, never re-post it. Posting starts the scenario
+      // again, which replays every purchase and puts the answered ones
+      // straight back in the inbox.
+      if (run) setRun(await api.readRun(run.scenario_id).catch(() => run))
     })
 
   const tighten = () =>

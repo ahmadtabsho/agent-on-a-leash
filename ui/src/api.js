@@ -34,7 +34,10 @@ export const api = {
   tighten: (payload) =>
     request('/policy/tighten', { method: 'POST', body: JSON.stringify(payload) }),
   revoke: () => request('/policy', { method: 'DELETE' }),
+  // POST starts a scenario. GET reads the one already run — they are not
+  // interchangeable: re-posting replays every purchase and refills the inbox.
   run: (scenarioId) => request(`/runs/${scenarioId}`, { method: 'POST' }),
+  readRun: (scenarioId) => request(`/runs/${scenarioId}`),
   pending: () => request('/pending'),
   resolve: (authorizationId, decision, message = '') =>
     request(`/pending/${authorizationId}/resolve`, {

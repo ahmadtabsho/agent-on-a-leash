@@ -474,6 +474,17 @@ def start_run(scenario_id: str) -> dict:
     if scenario_id not in BUILDER.catalogue:
         raise HTTPException(404, f"Unknown scenario {scenario_id}.")
 
+    # Starting a scenario again supersedes the previous attempt. Without this
+    # the inbox accumulates purchases from runs nobody is looking at any more,
+    # each under its own live ID, so the customer is asked about the same thing
+    # several times over.
+    for authorization_id, step in list(SESSION.pending.items()):
+        if step.get("run_id") == scenario_id:
+            SESSION.pending.pop(authorization_id)
+    for authorization_id, step in list(SESSION.lapsed.items()):
+        if step.get("run_id") == scenario_id:
+            SESSION.lapsed.pop(authorization_id)
+
     replay = BUILDER.build(scenario_id, compiled, mandate_id=mandate.mandate_id)
     state = RunState(run_id=scenario_id)
     engine = _demo_engine()

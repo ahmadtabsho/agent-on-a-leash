@@ -277,3 +277,35 @@ def test_a_matching_policy_is_not_flagged(client):
     authorise(client, MONITOR)
     body = client.post("/api/runs/SCEN0004").json()
     assert body["policy_matches_scenario"] is True
+
+
+def test_reading_a_run_back_does_not_refill_the_inbox(client):
+    """The interface reads the run after the customer answers. If it re-posted
+    instead, the scenario would replay and put the answered purchase straight
+    back in front of them — which is what it did."""
+    authorise(client, MONITOR)
+    client.post("/api/runs/SCEN0004")
+
+    before = client.get("/api/pending").json()["pending"]
+    assert len(before) == 2
+    client.post(f"/api/pending/{before[0]['authorization_id']}/resolve", json={"decision": "approve"})
+    assert len(client.get("/api/pending").json()["pending"]) == 1
+
+    body = client.get("/api/runs/SCEN0004").json()
+
+    assert len(client.get("/api/pending").json()["pending"]) == 1, "reading must not re-run"
+    answered = [s for s in body["steps"] if s.get("resolved_by_customer")]
+    assert len(answered) == 1 and answered[0]["resolved_by_customer"] == "approve"
+
+
+def test_re_posting_a_run_does_replay_it(client):
+    """The counterpart: POST genuinely restarts the scenario. Both behaviours
+    are wanted, which is why the interface must not confuse them."""
+    authorise(client, MONITOR)
+    client.post("/api/runs/SCEN0004")
+    target = client.get("/api/pending").json()["pending"][0]["authorization_id"]
+    client.post(f"/api/pending/{target}/resolve", json={"decision": "approve"})
+    assert len(client.get("/api/pending").json()["pending"]) == 1
+
+    client.post("/api/runs/SCEN0004")
+    assert len(client.get("/api/pending").json()["pending"]) == 2

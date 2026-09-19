@@ -29,11 +29,12 @@ raising them.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol
 
-from ..config import Settings
+from ..config import DEFAULT_LLM_MODEL, Settings
 
 SYSTEM_PROMPT = """You compare a shopping request with one item in a basket.
 
@@ -95,7 +96,7 @@ PROVIDERS: dict[str, Provider] = {
         "https://openrouter.ai/api/v1/chat/completions",
         "OPENROUTER_API_KEY",
         "chat",
-        "openai/gpt-4o-mini",
+        DEFAULT_LLM_MODEL,
     ),
     "openai": Provider(
         "openai",
@@ -114,7 +115,9 @@ PROVIDERS: dict[str, Provider] = {
 }
 
 
-def _completion_for(provider: Provider, model: str, api_key: str) -> Completion:
+def _completion_for(
+    provider: Provider, model: str, api_key: str, *, max_tokens: int = 100
+) -> Completion:
     """Build the one call this module makes, for the chosen provider."""
 
     def call(system: str, user: str, *, timeout_s: float) -> str:
@@ -128,7 +131,7 @@ def _completion_for(provider: Provider, model: str, api_key: str) -> Completion:
             }
             payload = {
                 "model": model,
-                "max_tokens": 100,
+                "max_tokens": max_tokens,
                 "system": system,
                 "messages": [{"role": "user", "content": user}],
             }
@@ -143,8 +146,11 @@ def _completion_for(provider: Provider, model: str, api_key: str) -> Completion:
                 headers["X-Title"] = "Agent on a Leash"
             payload = {
                 "model": model,
-                "max_tokens": 100,
+                "max_tokens": max_tokens,
                 "temperature": 0,
+                # Both chat-style providers honour this, and it removes the
+                # commonest failure: a model wrapping its JSON in prose.
+                "response_format": {"type": "json_object"},
                 "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
@@ -166,21 +172,39 @@ def _completion_for(provider: Provider, model: str, api_key: str) -> Completion:
     return call
 
 
+def completion_from_settings(
+    settings: Settings, *, max_tokens: int = 100
+) -> Completion | None:
+    """Turn configuration into a callable, or None if it is not usable.
+
+    The single place provider, model and key come together, so every module
+    that talks to a model follows `LEASH_LLM_PROVIDER` rather than each one
+    hard-wiring its own vendor.
+    """
+    if not settings.llm_enabled:
+        return None
+    provider = PROVIDERS.get(settings.llm_provider)
+    if provider is None:
+        return None
+    key = os.environ.get(provider.env_key)
+    if not key:
+        return None
+    model = settings.llm_model or provider.default_model
+    return _completion_for(provider, model, key, max_tokens=max_tokens)
+
+
+def _openrouter_completion(model: str, api_key: str, *, max_tokens: int = 100) -> Completion:
+    """OpenRouter specifically. Kept as a named helper for direct use."""
+    return _completion_for(PROVIDERS["openrouter"], model, api_key, max_tokens=max_tokens)
+
+
 class IntentAdvisor:
     """Asks a small model whether a cart line is what the customer described."""
 
     def __init__(self, settings: Settings | None = None, completion: Completion | None = None):
         self.settings = settings or Settings.from_env()
         self.provider = PROVIDERS.get(self.settings.llm_provider)
-        self._completion = completion
-
-        if self._completion is None and self.settings.llm_enabled and self.provider:
-            import os
-
-            key = os.environ.get(self.provider.env_key)
-            if key:
-                model = self.settings.llm_model or self.provider.default_model
-                self._completion = _completion_for(self.provider, model, key)
+        self._completion = completion or completion_from_settings(self.settings)
 
     @property
     def available(self) -> bool:

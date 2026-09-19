@@ -46,11 +46,12 @@ class Settings:
     api_key: str | None
     decision_budget_ms: int
     llm_enabled: bool
-    # Defaults so a caller that does not care about the advisor — every test of
-    # the decision path — need not name it.
-    llm_provider: str = "openrouter"
-    llm_model: str = "openai/gpt-4o-mini"
+    llm_model: str = DEFAULT_LLM_MODEL
     llm_timeout_ms: int = 2000
+    # Added after the fields above, deliberately. Callers construct Settings
+    # positionally, so inserting a field in the middle silently reassigns every
+    # argument after it — which is exactly what happened the first time.
+    llm_provider: str = "openrouter"
     # Shortens the customer's answering window for demonstration only. None
     # means use whatever the platform reports, which is the truthful default.
     human_timeout_override_s: float | None = None
@@ -68,7 +69,7 @@ class Settings:
             llm_enabled=os.environ.get("LEASH_LLM_ENABLED", "").lower()
             in {"1", "true", "yes"},
             llm_provider=os.environ.get("LEASH_LLM_PROVIDER", "openrouter").strip().lower(),
-            llm_model=os.environ.get("LEASH_LLM_MODEL", "openai/gpt-4o-mini"),
+            llm_model=os.environ.get("LEASH_LLM_MODEL", DEFAULT_LLM_MODEL),
             llm_timeout_ms=_int_env("LEASH_LLM_TIMEOUT_MS", 2000),
             human_timeout_override_s=_float_env("LEASH_HUMAN_TIMEOUT_SECONDS", None),
         )

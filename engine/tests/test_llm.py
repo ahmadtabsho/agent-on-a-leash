@@ -143,7 +143,7 @@ def test_any_failure_returns_nothing(exc):
 
 def test_a_reply_that_arrives_too_late_is_not_used():
     """The deadline is not ours to spend on a second opinion."""
-    late = Settings(ENABLED.base_url, None, 2500, True, "anthropic", "m", 10)
+    late = Settings(ENABLED.base_url, None, 2500, True, "m", 10, "anthropic")
 
     def slow(system, user, *, timeout_s):
         import time
@@ -155,7 +155,7 @@ def test_a_reply_that_arrives_too_late_is_not_used():
 
 
 def test_the_advisor_is_off_unless_explicitly_enabled():
-    off = Settings(ENABLED.base_url, None, 2500, False, "anthropic", "m", 900)
+    off = Settings(ENABLED.base_url, None, 2500, False, "m", 900, "anthropic")
     assert not IntentAdvisor(off, lambda *a, **k: '{"verdict":"match"}').available
 
 

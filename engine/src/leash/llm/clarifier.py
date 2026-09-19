@@ -8,13 +8,12 @@ merchant prose, changes a rule, or chooses a decision.
 from __future__ import annotations
 
 import json
-import os
 import time
 from typing import TYPE_CHECKING
 
 from ..config import Settings
 from ..models.enums import Decision
-from .advisor import Completion, _openrouter_completion
+from .advisor import Completion, completion_from_settings
 
 if TYPE_CHECKING:
     from ..decision.evidence import Clarification, Finding
@@ -107,10 +106,8 @@ class ClarificationPlanner:
     def __init__(self, settings: Settings | None = None, completion: Completion | None = None):
         self.settings = settings or Settings.from_env()
         self._completion = completion
-        if self._completion is None and self.settings.llm_enabled:
-            key = os.environ.get("OPENROUTER_API_KEY")
-            if key:
-                self._completion = _openrouter_completion(self.settings.llm_model, key)
+        if self._completion is None:
+            self._completion = completion_from_settings(self.settings)
 
     @property
     def available(self) -> bool:

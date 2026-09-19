@@ -17,6 +17,9 @@ two together dictate the shape of this module, which is deliberately small:
 * **Fail open to the deterministic answer.** No key, no network, a timeout, a
   malformed reply, an unexpected shape: every one of these returns `None` and
   the engine proceeds exactly as if the advisor did not exist.
+* **Provider-agnostic.** OpenRouter, OpenAI and Anthropic are all supported and
+  differ only in endpoint and auth. Nothing above this layer knows which one is
+  in use, and switching costs one line of `.env`.
 
 The prompt is given the product facts, never the policy, and never the raw
 merchant text. A model that cannot see the limits cannot be talked into
@@ -70,28 +73,95 @@ class Completion(Protocol):
     def __call__(self, system: str, user: str, *, timeout_s: float) -> str: ...
 
 
-def _anthropic_completion(model: str, api_key: str) -> Completion:
+# --- providers -------------------------------------------------------------
+#
+# Three are supported and they differ only in where the request goes and how it
+# is authenticated. OpenAI and OpenRouter share the chat-completions shape, so
+# one implementation covers both.
+
+
+@dataclass(frozen=True)
+class Provider:
+    name: str
+    url: str
+    env_key: str
+    style: str  # "chat" (OpenAI-shaped) or "messages" (Anthropic-shaped)
+    default_model: str
+
+
+PROVIDERS: dict[str, Provider] = {
+    "openrouter": Provider(
+        "openrouter",
+        "https://openrouter.ai/api/v1/chat/completions",
+        "OPENROUTER_API_KEY",
+        "chat",
+        "openai/gpt-4o-mini",
+    ),
+    "openai": Provider(
+        "openai",
+        "https://api.openai.com/v1/chat/completions",
+        "OPENAI_API_KEY",
+        "chat",
+        "gpt-4o-mini",
+    ),
+    "anthropic": Provider(
+        "anthropic",
+        "https://api.anthropic.com/v1/messages",
+        "ANTHROPIC_API_KEY",
+        "messages",
+        "claude-haiku-4-5-20251001",
+    ),
+}
+
+
+def _completion_for(provider: Provider, model: str, api_key: str) -> Completion:
+    """Build the one call this module makes, for the chosen provider."""
+
     def call(system: str, user: str, *, timeout_s: float) -> str:
         import httpx
 
-        response = httpx.post(
-            "https://api.anthropic.com/v1/messages",
-            timeout=timeout_s,
-            headers={
+        if provider.style == "messages":
+            headers = {
                 "x-api-key": api_key,
                 "anthropic-version": "2023-06-01",
                 "content-type": "application/json",
-            },
-            json={
+            }
+            payload = {
                 "model": model,
                 "max_tokens": 100,
                 "system": system,
                 "messages": [{"role": "user", "content": user}],
-            },
-        )
+            }
+        else:
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
+            if provider.name == "openrouter":
+                # OpenRouter asks callers to identify themselves.
+                headers["HTTP-Referer"] = "https://github.com/ahmadtabsho/agent-on-a-leash"
+                headers["X-Title"] = "Agent on a Leash"
+            payload = {
+                "model": model,
+                "max_tokens": 100,
+                "temperature": 0,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+            }
+
+        response = httpx.post(provider.url, timeout=timeout_s, headers=headers, json=payload)
         response.raise_for_status()
-        blocks = response.json().get("content", [])
-        return "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+        body = response.json()
+
+        if provider.style == "messages":
+            blocks = body.get("content", [])
+            return "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+        choices = body.get("choices") or []
+        if not choices:
+            return ""
+        return choices[0].get("message", {}).get("content", "") or ""
 
     return call
 
@@ -101,13 +171,16 @@ class IntentAdvisor:
 
     def __init__(self, settings: Settings | None = None, completion: Completion | None = None):
         self.settings = settings or Settings.from_env()
+        self.provider = PROVIDERS.get(self.settings.llm_provider)
         self._completion = completion
-        if self._completion is None and self.settings.llm_enabled:
+
+        if self._completion is None and self.settings.llm_enabled and self.provider:
             import os
 
-            key = os.environ.get("ANTHROPIC_API_KEY")
+            key = os.environ.get(self.provider.env_key)
             if key:
-                self._completion = _anthropic_completion(self.settings.llm_model, key)
+                model = self.settings.llm_model or self.provider.default_model
+                self._completion = _completion_for(self.provider, model, key)
 
     @property
     def available(self) -> bool:
@@ -155,7 +228,8 @@ class IntentAdvisor:
         if parsed is None:
             return None
         advice, why = parsed
-        return AdvisorResult(advice, why, self.settings.llm_model, elapsed_ms)
+        model = f"{self.settings.llm_provider}/{self.settings.llm_model}"
+        return AdvisorResult(advice, why, model, elapsed_ms)
 
 
 def _parse(raw: str) -> tuple[Advice, str] | None:

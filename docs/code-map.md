@@ -207,9 +207,14 @@ I lower my limit mid-run?" gets a curl command rather than a button.
 
 ### Known and deliberate
 
-**The advisor has never called a real model.**
-Every failure path is tested; the happy path against a live endpoint is not.
-It is off by default, so this only matters if you want to demo it.
+**~~The advisor has never called a real model.~~** *(Done — and the measurement
+argues for leaving it off.)*
+Three providers are supported: OpenRouter, OpenAI and Anthropic, differing only
+in endpoint and auth. Measured against OpenRouter with `openai/gpt-4o-mini`:
+it answered 4 of 5 intent questions correctly, dropped the fifth on timing, and
+**changed not one decision** across SCEN0002 and SCEN0004. The cost was the
+slowest decision rising from 0.88 ms to 2,167 ms — roughly a quarter of the
+platform's 8-second budget, for no change in outcome.
 
 **`GET /v1/events` is unused.**
 The client method exists but nothing calls it. It would matter for reconciling

@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agent on a Leash — Technical Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  @page { size: A4; margin: 18mm 16mm 16mm; }
+  @page:first { margin: 0; }
+
+  :root {
+    --ink: #101418;
+    --ink-2: #444f59;
+    --ink-3: #6f7c88;
+    --line: #ccd4dc;
+    --line-2: #e6ebf0;
+    --paper: #ffffff;
+    --tint: #f2f5f8;
+    --accent: #0f4c92;
+    --accent-tint: #e6eef8;
+    --ok: #0a6b45;   --ok-bg: #e2f2ea;
+    --stop: #a01f16; --stop-bg: #fae8e6;
+    --ask: #7d5300;  --ask-bg: #faeeda;
+    --display: "IBM Plex Sans Condensed", "Helvetica Neue", Arial, sans-serif;
+    --body: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", "DejaVu Sans Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 10.2pt; line-height: 1.52;
+  }
+
+  /* ---------- cover ---------- */
+  .cover {
+    height: 297mm; padding: 34mm 22mm 20mm;
+    display: flex; flex-direction: column;
+    border-left: 9mm solid var(--accent);
+    page-break-after: always;
+  }
+  .cover .org {
+    font-family: var(--mono); font-size: 8.6pt; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 14mm;
+  }
+  .cover h1 {
+    font-family: var(--display); font-weight: 700; font-size: 40pt;
+    line-height: 1.0; letter-spacing: -0.02em; margin: 0;
+  }
+  .cover .tag {
+    font-size: 13pt; color: var(--ink-2); font-style: italic;
+    margin: 7mm 0 0; max-width: 115mm; line-height: 1.45;
+  }
+  .cover .spacer { flex: 1; }
+  .cover .figures {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0; border-top: 1.4pt solid var(--ink); border-bottom: 1.4pt solid var(--ink);
+    padding: 5mm 0; margin-bottom: 9mm;
+  }
+  .cover .figures div { padding-right: 5mm; }
+  .cover .figures dt {
+    font-family: var(--mono); font-size: 7.4pt; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 1.5mm;
+  }
+  .cover .figures dd {
+    font-family: var(--display); font-weight: 600; font-size: 21pt;
+    margin: 0; letter-spacing: -0.01em;
+  }
+  .cover .figures dd small { font-size: 9pt; color: var(--ink-3); font-weight: 400; }
+  .cover .who { font-size: 10pt; color: var(--ink-2); }
+  .cover .who b { font-family: var(--display); font-size: 11pt; color: var(--ink); }
+  .cover .who .names { font-family: var(--mono); font-size: 8.8pt; color: var(--ink-3); margin-top: 2mm; }
+
+  /* ---------- structure ---------- */
+  section { page-break-inside: auto; }
+  h2 {
+    font-family: var(--display); font-weight: 700; font-size: 17pt;
+    letter-spacing: -0.015em; margin: 0 0 1.5mm; line-height: 1.12;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-family: var(--display); font-weight: 600; font-size: 11.5pt;
+    margin: 6mm 0 2mm; page-break-after: avoid;
+  }
+  .num {
+    font-family: var(--mono); font-size: 7.8pt; letter-spacing: 0.13em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 2mm;
+  }
+  .rule { border: 0; border-top: 1.4pt solid var(--ink); margin: 0 0 4mm; }
+  p { margin: 0 0 3mm; }
+  .lede { font-size: 11pt; color: var(--ink-2); margin-bottom: 4mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 5mm; }
+  li { margin-bottom: 1.5mm; }
+  strong { font-weight: 600; }
+  code {
+    font-family: var(--mono); font-size: 8.6pt; background: var(--tint);
+    border: 0.5pt solid var(--line-2); border-radius: 2pt; padding: 0 1mm;
+  }
+
+  .break { page-break-before: always; }
+
+  /* ---------- tables ---------- */
+  table {
+    width: 100%; border-collapse: collapse; font-size: 9.2pt;
+    margin: 3mm 0 4mm; page-break-inside: avoid;
+  }
+  th, td { text-align: left; padding: 1.8mm 2.5mm; border-bottom: 0.5pt solid var(--line-2); vertical-align: top; }
+  thead th {
+    font-family: var(--mono); font-size: 7.4pt; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 500;
+    background: var(--tint); border-bottom: 0.9pt solid var(--line);
+  }
+  td.n { font-family: var(--mono); text-align: right; white-space: nowrap; }
+  tfoot td { font-weight: 600; border-top: 1pt solid var(--line); background: var(--tint); }
+
+  /* ---------- callouts ---------- */
+  .note {
+    border-left: 2.5pt solid var(--accent); background: var(--accent-tint);
+    padding: 3mm 4mm; margin: 3mm 0 4mm; page-break-inside: avoid;
+  }
+  .note p { margin: 0; }
+  .note p + p { margin-top: 2mm; }
+  .note b { font-family: var(--display); font-size: 10.4pt; }
+
+  .finding {
+    border-left: 2.5pt solid var(--stop); background: var(--paper);
+    border-top: 0.5pt solid var(--line-2); border-right: 0.5pt solid var(--line-2);
+    border-bottom: 0.5pt solid var(--line-2);
+    padding: 2.5mm 4mm; margin-bottom: 2.5mm; page-break-inside: avoid;
+  }
+  .finding b { font-family: var(--display); font-size: 10.2pt; display: block; margin-bottom: 1mm; }
+  .finding span { color: var(--ink-2); font-size: 9.4pt; }
+
+  .chip {
+    display: inline-block; font-family: var(--mono); font-size: 7.4pt;
+    letter-spacing: 0.05em; text-transform: uppercase; padding: 0.3mm 1.6mm;
+    border-radius: 2pt;
+  }
+  .chip.ok { background: var(--ok-bg); color: var(--ok); }
+  .chip.stop { background: var(--stop-bg); color: var(--stop); }
+  .chip.ask { background: var(--ask-bg); color: var(--ask); }
+
+  pre {
+    font-family: var(--mono); font-size: 8.4pt; line-height: 1.5;
+    background: var(--tint); border: 0.5pt solid var(--line-2);
+    padding: 3mm 4mm; margin: 2mm 0 4mm; white-space: pre-wrap;
+    page-break-inside: avoid;
+  }
+  .cm { color: var(--ink-3); }
+
+  /* ---------- stage list ---------- */
+  .stages { border-top: 0.9pt solid var(--line); margin: 3mm 0 4mm; }
+  .stage {
+    display: grid; grid-template-columns: 7mm 42mm 1fr; gap: 3mm;
+    padding: 2.2mm 0; border-bottom: 0.5pt solid var(--line-2);
+    page-break-inside: avoid;
+  }
+  .stage b { font-family: var(--mono); color: var(--accent); font-size: 10pt; }
+  .stage .t { font-family: var(--display); font-weight: 600; font-size: 10.2pt; }
+  .stage .d { color: var(--ink-2); font-size: 9.4pt; }
+
+  /* ---------- team ---------- */
+  .team { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin: 3mm 0; }
+  .member {
+    border: 0.5pt solid var(--line-2); border-top: 2pt solid var(--accent);
+    padding: 3mm 4mm; page-break-inside: avoid;
+  }
+  .member b { font-family: var(--display); font-size: 11pt; display: block; margin-bottom: 1.5mm; }
+  .member span { color: var(--ink-2); font-size: 9.2pt; }
+
+  .foot {
+    margin-top: 6mm; padding-top: 2.5mm; border-top: 1.4pt solid var(--ink);
+    font-family: var(--mono); font-size: 7.8pt; color: var(--ink-3);
+    display: flex; justify-content: space-between;
+  }
+</style>
+<style>
+  .score{font-family:var(--mono);font-size:8pt;letter-spacing:.05em;text-transform:uppercase;
+    background:var(--ok-bg);color:var(--ok);padding:.3mm 1.6mm;border-radius:2pt;white-space:nowrap}
+  .score.part{background:var(--ask-bg);color:var(--ask)}
+  .score.no{background:var(--stop-bg);color:var(--stop)}
+  .qa{border-left:2.5pt solid var(--ink-3);padding:2mm 4mm;margin:0 0 3mm;page-break-inside:avoid}
+  .qa b{font-family:var(--display);font-size:10.2pt;display:block;margin-bottom:1mm}
+  .qa p{margin:0;color:var(--ink-2);font-size:9.4pt}
+  .step{border-top:1.4pt solid var(--accent);padding-top:2.5mm;margin-bottom:5mm;page-break-inside:avoid}
+  .step .hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1.5mm}
+  .step .hd b{font-family:var(--display);font-size:12.5pt}
+  .step .hd span{font-family:var(--mono);font-size:7.8pt;color:var(--ink-3)}
+  .kv{font-family:var(--mono);font-size:8.4pt;color:var(--ink-3);margin:1.5mm 0 2mm}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <p class="org">Viseca &times; START Global / Swiss {ai} Weeks 2026 &middot; Team PrismAI</p>
+  <h1>Agent on a Leash<br><span style="font-size:22pt;font-weight:600">Technical Report</span></h1>
+  <p class="tag">The data, the problem, and every component we built to solve it &mdash; with the reasoning behind each decision.</p>
+  <div class="spacer"></div>
+  <dl class="figures">
+    <div><dt>Purchases, live</dt><dd>45</dd></div>
+    <div><dt>Slowest decision</dt><dd>2.88<small> ms</small></dd></div>
+    <div><dt>Budget</dt><dd>8000<small> ms</small></dd></div>
+    <div><dt>Tests</dt><dd>301</dd></div>
+  </dl>
+  <div class="who">
+    <b>Team PrismAI</b>
+    <div class="names">Ahmad Tabsho &middot; Wiktor &#321;a&#380;ewski &middot; Simon Markiewicz &middot; Tacdin Ozmen</div>
+    <div class="names">team_0014f616 &middot; github.com/ahmadtabsho/agent-on-a-leash</div>
+  </div>
+</div>
+
+<section>
+  <p class="num">01 &mdash; What is expected of us</p>
+  <hr class="rule">
+  <h2>The brief, and where we stand against it</h2>
+  <p class="lede">Viseca published a 25-item solution checklist alongside the challenge. Every item is scored here honestly, because a claim we cannot defend is worse than a gap we admit.</p>
+
+  <h3>Core components</h3>
+  <table>
+    <thead><tr><th>Requirement</th><th>Where it lives</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td>Policy interpretation engine</td><td><code>policy/compiler.py</code> &mdash; instruction to executable rules</td><td><span class="score">done</span></td></tr>
+      <tr><td>Transaction evaluation logic</td><td><code>decision/rules.py</code> + <code>decision/facts.py</code></td><td><span class="score">done</span></td></tr>
+      <tr><td>Decision engine (approve / decline / ask)</td><td><code>decision/engine.py</code>, seven stages</td><td><span class="score">done</span></td></tr>
+      <tr><td>Human approval / rejection path</td><td>Step-up inbox in the UI, <code>/resolve</code> on the platform</td><td><span class="score">done</span></td></tr>
+      <tr><td>Policy update / revocation</td><td><code>policy/amend.py</code>, tighten-only; revoke in one click</td><td><span class="score">done</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Testing and validation</h3>
+  <table>
+    <thead><tr><th>Requirement</th><th>Evidence</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td>Ordinary transaction</td><td>AU0035 approved in 0.39 ms with no adverse findings</td><td><span class="score">done</span></td></tr>
+      <tr><td>Ambiguous / suspicious transaction</td><td>AU0040 injection, AU0039 lookalike, AU0016 unstated terms</td><td><span class="score">done</span></td></tr>
+      <tr><td>Human escalation path</td><td>5 purchases escalated live; both resolve paths exercised</td><td><span class="score">done</span></td></tr>
+      <tr><td>Works with synthetic data</td><td>All 45 offline, no network, no key</td><td><span class="score">done</span></td></tr>
+      <tr><td>Connects to live API</td><td>All 45 answered on the sandbox, zero parse failures</td><td><span class="score">done</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Quality and resilience</h3>
+  <table>
+    <thead><tr><th>Requirement</th><th>Evidence</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td>Meets latency requirements</td><td>2.88 ms worst case against 8000 ms</td><td><span class="score">done</span></td></tr>
+      <tr><td>Works if external services fail</td><td>Engine has no network. Model failure tested across six modes</td><td><span class="score">done</span></td></tr>
+      <tr><td>No hard-coded scenario assumptions</td><td>A test rewrites scenario ID, request ID and replay order; decisions unchanged</td><td><span class="score">done</span></td></tr>
+      <tr><td>Decisions explainable and auditable</td><td>Every verdict carries its findings; append-only journal</td><td><span class="score">done</span></td></tr>
+      <tr><td>Customer retains control</td><td>Draft, confirm, tighten, revoke; nothing runs before confirmation</td><td><span class="score">done</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Demonstration and documentation</h3>
+  <table>
+    <thead><tr><th>Requirement</th><th>Evidence</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td>All three demo flows</td><td><code>leash demo</code> selects them from a live run, not a script</td><td><span class="score">done</span></td></tr>
+      <tr><td>Judges understand what / why / how</td><td>Evidence panel per decision, in the customer's own terms</td><td><span class="score">done</span></td></tr>
+      <tr><td>Architecture diagram</td><td><code>ARCHITECTURE.md</code>, and section 04 of this report</td><td><span class="score">done</span></td></tr>
+      <tr><td>Policy format documented</td><td>19-field closed namespace, section 05</td><td><span class="score">done</span></td></tr>
+      <tr><td>API usage examples, deployment, demo script</td><td><code>README.md</code>, <code>submission/recording-guide.pdf</code></td><td><span class="score">done</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <p><b>One item we should not overclaim.</b></p>
+    <p>The brief suggests combining &ldquo;rules-based logic, behavioural signals, machine learning, language models and interface design&rdquo;. We use four of those five. There is <strong>no trained machine-learning model</strong> in this system: behavioural signals are computed arithmetically from history rather than learned. We think that is the right call at this data scale &mdash; 4,701 history rows is not a training set &mdash; but it is a deliberate omission, not an oversight, and we would rather say so than imply otherwise.</p>
+  </div>
+</section>
+
+<section class="break">
+  <p class="num">02 &mdash; The data</p>
+  <hr class="rule">
+  <h2>What we were given, and what is hidden in it</h2>
+  <p class="lede">Eleven CSVs, three JSON schemas and a manifest. The structure is a realistic payment hierarchy, and several of its properties are traps rather than conveniences.</p>
+
+  <pre>Customer &mdash;&lt; Accounts &mdash;&lt; Cards &mdash;&lt; Authorizations</pre>
+
+  <table>
+    <thead><tr><th>File</th><th class="n">Rows</th><th>What it carries, and why it matters</th></tr></thead>
+    <tbody>
+      <tr><td><code>purchase_attempts</code></td><td class="n">45</td><td>The purchases to decide. Ordered by <code>replay_order</code> within each of 5 scenarios.</td></tr>
+      <tr><td><code>purchase_attempt_items</code></td><td class="n">56</td><td>Cart lines. <code>item_details</code> is merchant-written free text &mdash; the attack surface.</td></tr>
+      <tr><td><code>authorization_history</code></td><td class="n">4,701</td><td>Past activity. The only source for familiarity, device history and velocity. 453 are agent purchases (416 approved, 37 declined) &mdash; deliberately included so agent use is not itself treated as anomalous.</td></tr>
+      <tr><td><code>merchants</code></td><td class="n">58</td><td>Name, category, MCC, country, availability. Contains the lookalike pair.</td></tr>
+      <tr><td><code>items</code></td><td class="n">66</td><td>Catalogue with CHF price ranges. Three item categories (<code>cosmetics</code>, <code>gift_card</code>, <code>membership</code>) have no merchant counterpart at all.</td></tr>
+      <tr><td><code>customers</code> / <code>accounts</code> / <code>cards</code></td><td class="n">92</td><td>Personas, issuer limits, card capabilities and status.</td></tr>
+      <tr><td><code>scenario_catalogue</code></td><td class="n">5</td><td>The five cardholder instructions, verbatim.</td></tr>
+      <tr><td><code>scenario_authorities</code></td><td class="n">5</td><td>Which customer and card replays each scenario. Not a wallet policy.</td></tr>
+      <tr><td><code>fx_rates</code></td><td class="n">4</td><td>Fixed synthetic rates: EUR 0.95, GBP 1.12, USD 0.87, CHF 1.00.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Six properties of the data that change the design</h3>
+  <table>
+    <thead><tr><th>Property</th><th>What it forces</th></tr></thead>
+    <tbody>
+      <tr><td>No expected decisions, no risk labels, no answer key</td><td>Nothing can be validated against ground truth. Correctness has to be argued from policy and facts, which is why every verdict carries its evidence.</td></tr>
+      <tr><td>Currency does not follow merchant country. 61 historical rows at foreign merchants bill in CHF.</td><td>Convert using the row's <code>currency</code>, never the merchant's country.</td></tr>
+      <tr><td>Historical and runtime authorizations share a column name but live in different ID namespaces (<code>TR...</code> vs <code>AU...</code>)</td><td>A join across the two files returns nothing, correctly. Never derive one ID from another.</td></tr>
+      <tr><td><code>card_present</code> is not a restatement of <code>channel</code>. <code>mobile_wallet</code> is genuinely mixed: 415 in-person, 197 remote.</td><td>Treating the wallet channel as uniformly remote misreads a third of it.</td></tr>
+      <tr><td>Merchant <code>availability</code> is catalogue metadata, not a validation rule</td><td>A shop with a physical store still appears in ecommerce records.</td></tr>
+      <tr><td>Three item categories have no merchant counterpart</td><td>A supermarket sells cosmetics without ceasing to be a grocery merchant &mdash; so a purpose rule must constrain <code>items[]</code>, not <code>merchant_category</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The five scenarios, and what each is really testing</h3>
+  <table>
+    <thead><tr><th>ID</th><th class="n">Events</th><th>The trap</th></tr></thead>
+    <tbody>
+      <tr><td><code>SCEN0000</code></td><td class="n">1</td><td>Connection check. Does the end-to-end path work at all.</td></tr>
+      <tr><td><code>SCEN0001</code></td><td class="n">10</td><td>Per-order and rolling seven-day limits. Delivery fee already inside the total. Two orders six minutes apart. A cosmetics line inside a grocery basket.</td></tr>
+      <tr><td><code>SCEN0002</code></td><td class="n">12</td><td>Size 42 instead of 43. Final sale. A 7-day return window against a 14-day requirement. An unstated window. A <em>trail</em> shoe where a <em>road</em> shoe was asked for. An unrequested protection plan. A cycling helmet. CHF 215 against a CHF 200 cap. A shop outside the stated category. And one unfamiliar but fully compliant seller, which must <em>not</em> be blocked.</td></tr>
+      <tr><td><code>SCEN0003</code></td><td class="n">11</td><td>A new device appearing at 02:14. A velocity burst of 1&rarr;2&rarr;3 attempts in ten minutes. Foreign merchants in IT and GB requiring FX. Then recovery to the familiar device, which must relax again.</td></tr>
+      <tr><td><code>SCEN0004</code></td><td class="n">11</td><td>Two prompt injections. A lookalike seller one letter from a familiar one. A duplicate basket under a new ID. A gift voucher instead of a monitor. An unrequested add-on. And a legitimate re-quote after a decline, which must be allowed.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="break">
+  <p class="num">03 &mdash; The problem</p>
+  <hr class="rule">
+  <h2>Four safety concerns, one decision</h2>
+  <p class="lede">The brief names four things that can go wrong when an agent holds a card. They fail in different directions, and a system that only guards against one of them is not a control layer.</p>
+
+  <table>
+    <thead><tr><th>Concern</th><th>How it actually manifests in the data</th><th>Our answer</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Spending limits</strong><br>&ldquo;Doesn't spend too much?&rdquo;</td><td>Not by ignoring a limit, but by splitting an order, by the delivery fee, or by a rolling window nobody is tracking.</td><td>Decimal arithmetic, rolling windows on simulated purchase time, only final approvals counted.</td></tr>
+      <tr><td><strong>Merchant vetting</strong><br>&ldquo;Doesn't buy from shady merchants?&rdquo;</td><td>The shop is not obviously shady &mdash; its name is one letter from one you trust.</td><td>Familiarity matched on <code>merchant_id</code>, plus similarity detection against names this card has actually used.</td></tr>
+      <tr><td><strong>Intent verification</strong><br>&ldquo;Purchases what you actually intended?&rdquo;</td><td>The right category, the right price, the wrong item. A trail shoe. Size 42. A voucher.</td><td>Requested-item matching on name and category, attribute extraction from product text, unrequested-line detection.</td></tr>
+      <tr><td><strong>Prompt injection</strong><br>&ldquo;Resilient against injection?&rdquo;</td><td>The shop writes the product description, and that description is an input to whatever reads it.</td><td>Facts extracted by pattern only; the scanner holds no reference to the policy, so nothing written can reach the verdict.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>And the failure mode nobody lists</h3>
+  <div class="note">
+    <p><b>Blocking ordinary shopping is also a failure.</b></p>
+    <p>The brief says it explicitly: &ldquo;Unfamiliar purchases are not automatically wrong; blocking ordinary shopping unnecessarily is also a failure.&rdquo; A layer that declines everything scores zero on both counts. Two of the supplied attempts exist purely to catch over-blocking &mdash; AU0023, a new but fully compliant seller, and AU0042, a legitimate re-quote after a decline. Both are approved.</p>
+  </div>
+</section>
+
+<section class="break">
+  <p class="num">04 &mdash; Architecture</p>
+  <hr class="rule">
+  <h2>Two deployables, one contract</h2>
+  <p class="lede">Viseca intends to fold wallet control into the existing <em>one</em> app, while the decision runs in the backend under a hard latency ceiling. Opposite requirements, so they never share a process.</p>
+
+  <pre>   CUSTOMER SURFACE      |                      BACKEND
+                         |
+   +---------------+     |   +---------------+      +------------------+
+   |  Control UI   |---------|  Control API  |----->|                  |
+   |  React        |     |   |  draft        |      |   Decision       |
+   |  policy+inbox |     |   |  confirm      |      |   engine         |
+   +---------------+     |   |  revoke       |      |                  |
+                         |   +---------------+      |   pure function  |
+                         |                          |   no network     |
+                         |   +---------------+      |   &lt; 3 ms         |
+                         |   |    Worker     |----->|                  |
+                         |   |  long-poll    |      +------------------+
+                         |   +-------+-------+           ^        |
+                         |           |                   |        v
+                         |           v          +------------------------+
+                         |   Viseca sandbox     |  Run state &amp; journal   |
+                         |   45 purchases       |  spend, answered ids,  |
+                         |                      |  basket fingerprints   |
+                         |                      +------------------------+</pre>
+
+  <p>The dependency graph points one way only, and this was verified by grepping imports rather than assumed: <code>models/</code>, <code>policy/</code> and <code>decision/</code> never import <code>api/</code> or <code>worker/</code>, and contain no HTTP client at all.</p>
+
+  <div class="note">
+    <p><b>The engine is a pure function of (event, run state).</b></p>
+    <p>No network, no clock beyond what it is handed, no I/O. One constraint buys three properties: it is fast enough for the deadline, it is testable offline against every supplied purchase, and it cannot be talked out of an answer because there is nothing to talk to.</p>
+  </div>
+
+  <table>
+    <thead><tr><th>Module</th><th class="n">Lines</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td><code>models/</code></td><td class="n">~700</td><td>Typed event contract, Decimal money, 13 closed vocabularies</td></tr>
+      <tr><td><code>policy/</code></td><td class="n">~800</td><td>Instruction to rules; 19-field namespace; tighten-only amendments</td></tr>
+      <tr><td><code>decision/</code></td><td class="n">~1,270</td><td>Seven stages, fact resolution, sanitiser, run state, card history</td></tr>
+      <tr><td><code>replay/</code></td><td class="n">~600</td><td>Offline event assembly from CSV, harness, append-only journal</td></tr>
+      <tr><td><code>api/</code></td><td class="n">~800</td><td>Sandbox client (15 endpoints), control plane, session persistence</td></tr>
+      <tr><td><code>worker/</code></td><td class="n">~400</td><td>Long-poll loop, idempotency, step-up inbox, one-command live run</td></tr>
+      <tr><td><code>llm/</code></td><td class="n">~600</td><td>Optional advisor and clarifier across three providers</td></tr>
+      <tr><td><code>ui/</code></td><td class="n">~900</td><td>Policy composer, decision timeline, step-up inbox</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="break">
+  <p class="num">05 &mdash; The build, step by step</p>
+  <hr class="rule">
+  <h2>Twelve components, and the reasoning behind each</h2>
+
+  <div class="step">
+    <div class="hd"><b>1. Data pack and integrity</b><span>datapack.py &middot; 4 tests</span></div>
+    <p>The pack is vendored so offline replay needs no network. Every one of its 18 files is verified against the manifest's sha256 and row count on each run.</p>
+    <p class="kv">Why: a silently edited fixture would change decisions without changing code. Failing loudly at load is cheaper than debugging a wrong verdict.</p>
+  </div>
+
+  <div class="step">
+    <div class="hd"><b>2. The typed contract</b><span>models/ &middot; 16 tests</span></div>
+    <p>Two gates on every incoming event: the platform's own <code>authorization_event.schema.json</code>, then Pydantic in <strong>strict</strong> mode with <code>extra="forbid"</code>. All problems are reported at once, never a partial parse.</p>
+    <p>Strict mode gives the schema's semantics rather than a friendly approximation. <code>"20.00"</code> is rejected where a number is required. <code>5411</code> is rejected for <code>merchant_mcc</code>, which the schema pins as a four-digit <em>string</em>. <code>True</code> is rejected wherever an integer is required, because Python treats <code>bool</code> as <code>int</code> and the schema does not.</p>
+    <p class="kv">Three semantics the schema cannot express, added on top: <code>order_returnable</code> stays a four-valued string, so &ldquo;unknown&rdquo; never becomes &ldquo;yes&rdquo;. A <code>null</code> period spend stays null, never 0.0, which would invent headroom. Naive timestamps are rejected, because a spending window computed against a zoneless time is a quietly wrong window.</p>
+  </div>
+
+  <div class="step">
+    <div class="hd"><b>3. The policy compiler</b><span>policy/compiler.py &middot; 39 tests</span></div>
+    <p>Turns the customer's own sentence into three outputs. <code>hard_rules</code> are executable. <code>guidance</code> is what we understood, in plain language. <code>open_questions</code> is what the sentence does not settle &mdash; and we refuse to settle it for them.</p>
+    <p>Extraction is deterministic pattern matching, no model. Compilation happens once, before confirmation, and the same sentence must always produce the same rules, because a customer confirming a policy is agreeing to <em>those</em> rules.</p>
+    <p class="kv">Example &mdash; SCEN0002 compiles to 7 rules: <code>billing_amount_chf &lt;= 200</code>, <code>merchant_category in [sporting_goods]</code>, <code>return_window_days &gt;= 14</code>, <code>order_returnable = true</code>, <code>requested_item = "road-running shoes"</code>, <code>requested_attribute = size=43</code>, <code>requested_item_match = match</code> &mdash; plus 4 open questions.</p>
+    <p><strong>What it refuses to decide.</strong> &ldquo;A shop I use regularly&rdquo; has no field in the event. Somebody must decide whether <em>regularly</em> means one past purchase or five, and that somebody is the customer. We also surface a gap the instructions never mention but the data does: two orders minutes apart can each sit under a per-order cap while together clearing it.</p>
+  </div>
+
+  <div class="step">
+    <div class="hd"><b>4. The field namespace</b><span>policy/vocabulary.py &middot; 19 fields</span></div>
+    <p>A rule's <code>field</code> is, in the contract's words, &ldquo;a convention for your engine to interpret&rdquo;. That freedom is also a hazard: a field name nothing resolves is a rule that silently never fires. So the namespace is closed, declared, and every compiled rule is checked against it.</p>
+    <p>Each field declares how it resolves &mdash; straight off the event, across <em>every</em> cart line, or derived from history, run state or merchant text &mdash; and whether a breach declines or escalates.</p>
+    <p class="kv">Only one field escalates on breach: <code>derived.session_integrity</code>. Whether someone other than the cardholder is driving a session is an inference, never something the evidence settles. An unfamiliar device is a new laptop as often as an intruder, and customers phrase that constraint as &ldquo;pause&rdquo;.</p>
+  </div>
+
+  <div class="step">
+    <div class="hd"><b>5. The decision engine</b><span>decision/engine.py &middot; 34 tests</span></div>
+    <p>Seven stages in order, each appending to a shared evidence ledger. The verdict is derived from the ledger at the end rather than returned early from the middle, so the explanation always accounts for everything looked at.</p>
+    <table style="margin-top:2mm">
+      <thead><tr><th class="n">#</th><th>Stage</th><th>What it prevents</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Parse and validate</td><td>Deciding on a message we could not fully read</td></tr>
+        <tr><td class="n">2</td><td>Preconditions</td><td>Spending on a permission already withdrawn</td></tr>
+        <tr><td class="n">3</td><td>Sanitise merchant text</td><td>A product description raising a spending limit</td></tr>
+        <tr><td class="n">4</td><td>Hard rules</td><td>A period limit measured on prior spend alone</td></tr>
+        <tr><td class="n">5</td><td>Intent match</td><td>A trail shoe passing as a road shoe</td></tr>
+        <tr><td class="n">6</td><td>Behavioural signals</td><td>Matching familiarity on a name an impostor controls</td></tr>
+        <tr><td class="n">7</td><td>Resolve</td><td>Collapsing &ldquo;uncertain&rdquo; into either neighbour</td></tr>
+      </tbody>
+    </table>
+    <p class="kv">Resolution rule: a definite breach declines; anything unsettled falls to the customer's own <code>uncertainty_policy</code>; only a clean pass approves.</p>
+  </div>
+
+  <div class="step">
+    <div class="hd"><b>6. The sanitiser</b><span>decision/sanitize.py &middot; 13 tests</span></div>
+    <p><code>item_details</code> is genuinely useful &mdash; shoe size, panel size, return window &mdash; and it is written by whoever wants the payment approved. Those two facts are only in tension if the text is obeyed.</p>
+    <p>So the module does two separate things and keeps them separate. Facts are extracted by pattern, and <strong>a pattern can only ever yield a number or a token</strong>, so no phrasing produces a permission. Separately, text addressed to an automated decider is detected across six independent signatures, after folding zero-width joiners, bidirectional overrides and full-width characters that would otherwise hide it.</p>
+    <p class="kv">Signatures: addresses_automated_agent &middot; impersonates_system_role &middot; overrides_prior_instructions &middot; claims_pre_authorisation &middot; demands_immediate_approval &middot; raises_or_removes_a_limit</p>
+    <p><strong>False positives matter as much.</strong> A test asserts that exactly 2 of 56 supplied cart lines flag. Ordinary copy &mdash; &ldquo;Road-running shoe, size 43; returns accepted within 30 days&rdquo; &mdash; passes untouched.</p>
+  </div>
+
+  <div class="step">
+    <div class="hd"><b>7. Money and time</b><span>models/money.py &middot; 6 tests</span></div>
+    <p>Spending limits are the spine of the challenge, so money never touches binary floating point. Amounts are <code>Decimal</code>, quantised to two places with half-even rounding, converted at the pack's fixed rates read from <code>fx_rates.csv</code> rather than hard-coded.</p>
+    <p>Two clocks are kept apart. <code>authorization.timestamp</code> is simulated purchase time and drives every spending window, velocity count and familiarity calculation. <code>deadline_at</code> is the real clock and governs only the response.</p>
+    <p class="kv">Both money invariants are verified against all 45 attempts as tests: our CHF conversion reproduces the platform's <code>billing_amount_chf</code> exactly (219.00 GBP &rarr; 245.28, 450.00 USD &rarr; 391.50), and <code>items_subtotal + delivery_fee</code> equals <code>amount</code> on every row &mdash; so adding delivery again would double-charge.</p>
+  </div>
+
+  <div class="step">
+    <div class="hd"><b>8. Run memory</b><span>decision/state.py &middot; 10 tests</span></div>
+    <p>Three things survive between purchases, each mapping to a documented failure mode. <strong>Approved spend</strong>, counting only final approvals &mdash; a purchase awaiting a human is not yet spend, and is tracked separately. <strong>Answers already given</strong>, keyed by live <code>authorization_id</code>, so a redelivery replays the saved answer rather than charging the limit twice. <strong>Basket fingerprints</strong>, because &ldquo;different IDs can still describe an unwanted duplicate order&rdquo;.</p>
+    <p class="kv">The platform redelivers after 3 seconds, which we learned from <code>/v1/bootstrap</code> rather than from the written contract.</p>
+  </div>
+
+  <div class="step">
+    <div class="hd"><b>9. Offline replay and the journal</b><span>replay/ &middot; 10 tests</span></div>
+    <p>The pack ships a <em>readable</em> copy of one attempt, not a live event &mdash; it has string amounts and a flat shape, and it does not validate against the schema. So offline events are assembled from the CSVs instead, following the documented conversion rules, with fresh real-clock deadlines and live IDs minted per run.</p>
+    <p>Every decision is journalled append-only with its full evidence. A worker that restarts rebuilds spend totals and answered IDs from it, because coming back with an empty total would hand the agent its budget a second time.</p>
+  </div>
+
+  <div class="step">
+    <div class="hd"><b>10. Sandbox client and worker</b><span>api/ + worker/ &middot; 55 tests</span></div>
+    <p>All 15 endpoints. The worker answers what it is handed and never waits on a person. A <code>204</code> means no work in that polling window, <em>not</em> that the run ended. A <code>step_up</code> queues the purchase and the reply goes back through <code>/resolve</code>, never as a second automated decision. An event failing the contract is escalated with the parse errors attached rather than decided on.</p>
+    <p><code>leash run</code> does the whole live sequence in one command, with two orderings enforced by tests: the worker exists before the run starts, because the eight-second deadline runs from <em>queueing</em>; and nothing runs before the policy is confirmed.</p>
+  </div>
+
+  <div class="step">
+    <div class="hd"><b>11. Control plane and interface</b><span>api/control.py + ui/ &middot; 24 tests</span></div>
+    <p>A separate FastAPI service and a React interface that talks only to it. The engine never imports from the control plane; the control plane calls into the engine.</p>
+    <p>Built around the order of authority rather than around screens: an instruction is compiled and shown back with its rules, its plain-language reading and its open questions; nothing runs before confirmation; a live policy can be tightened and never loosened; a paused purchase sits in an inbox that says plainly it is not approved and does not count against a limit.</p>
+    <p class="kv">The session &mdash; mandate, inbox, runs and journal &mdash; is written atomically to disk on every change and restored on startup. Anything unreadable is discarded rather than half-restored.</p>
+  </div>
+
+  <div class="step">
+    <div class="hd"><b>12. The optional model layer</b><span>llm/ &middot; 25 tests</span></div>
+    <p>Three providers, differing only in endpoint and auth. Two roles: an <strong>intent advisor</strong> that gives a second opinion on whether a cart line is the item described, and a <strong>policy clarifier</strong> that rewords a blocking compiler question and rewrites the instruction from the customer's answer.</p>
+    <p>Both are constrained the same way. The advisor never sees the policy and is one-directional &mdash; it can turn an apparent match into uncertainty, never the reverse. The clarifier changes wording only; code decides <em>when</em> to ask and which answers are acceptable.</p>
+    <p class="kv">Every failure path returns nothing: no key, no network, a timeout, prose instead of JSON, a verdict outside the three accepted, a reply arriving after the budget. One budget covers a whole event, not one per cart line.</p>
+  </div>
+</section>
+
+<section class="break">
+  <p class="num">06 &mdash; Results</p>
+  <hr class="rule">
+  <h2>All 45 purchases on the live API</h2>
+  <table>
+    <thead><tr><th>Scenario</th><th class="n">Approve</th><th class="n">Decline</th><th class="n">Ask</th><th class="n">Slowest</th></tr></thead>
+    <tbody>
+      <tr><td>SCEN0000 Connection check</td><td class="n">1</td><td class="n">0</td><td class="n">0</td><td class="n">0.32 ms</td></tr>
+      <tr><td>SCEN0001 Household budget</td><td class="n">5</td><td class="n">5</td><td class="n">0</td><td class="n">0.58 ms</td></tr>
+      <tr><td>SCEN0002 Item and terms</td><td class="n">3</td><td class="n">7</td><td class="n">2</td><td class="n">1.48 ms</td></tr>
+      <tr><td>SCEN0003 Session integrity</td><td class="n">4</td><td class="n">6</td><td class="n">1</td><td class="n">2.88 ms</td></tr>
+      <tr><td>SCEN0004 Manipulated agent</td><td class="n">4</td><td class="n">5</td><td class="n">2</td><td class="n">2.57 ms</td></tr>
+    </tbody>
+    <tfoot><tr><td>Total</td><td class="n">17</td><td class="n">23</td><td class="n">5</td><td class="n">2.88 ms</td></tr></tfoot>
+  </table>
+  <p>Zero parse failures, zero missed deadlines. The counts match the offline replay exactly, which is the strongest available evidence that the engine is deterministic and that the offline harness is faithful.</p>
+
+  <h3>Eight defects found, and how</h3>
+  <div class="finding"><b>A period limit excluded the order being decided</b><span>CHF 299.50 + 65.50 passed a CHF 300 cap; the next order was blamed. Found by running SCEN0001.</span></div>
+  <div class="finding"><b>An unstated return policy was declining</b><span>Not permission &mdash; but not a refusal either. Found on AU0016.</span></div>
+  <div class="finding"><b>A trail shoe passed as a road-running shoe</b><span>Its copy advertises a &ldquo;lugged off-road sole&rdquo;; the matcher read prose as identity. Found on AU0017.</span></div>
+  <div class="finding"><b>A session signal declined instead of pausing</b><span>The customer wrote &ldquo;pause&rdquo;. Found on AU0026.</span></div>
+  <div class="finding"><b>Our own serialiser produced invalid events</b><span>Decimal written as a JSON string. Found by a round-trip test.</span></div>
+  <div class="finding"><b>The live envelope did not parse</b><span><code>event_id</code> arrives as an integer where the contract gives it no type. Found on first contact with the real API.</span></div>
+  <div class="finding"><b>&ldquo;CHF 300 a week&rdquo; compiled to a per-order cap</b><span>A weekly budget became a per-order allowance spendable daily. Found while driving the clarification flow.</span></div>
+  <div class="finding"><b>Answering a paused purchase put it straight back</b><span>The interface re-posted the run instead of reading it, replaying every purchase. Found by using the interface.</span></div>
+</section>
+
+<section class="break">
+  <p class="num">07 &mdash; Anticipated questions</p>
+  <hr class="rule">
+  <h2>What judges are likely to ask</h2>
+
+  <div class="qa"><b>&ldquo;Where is the AI?&rdquo;</b>
+    <p>The AI is the thing being controlled, not the thing controlling. We built the model hook, measured it, and found the deterministic engine did not need it: slowest decision went from 0.97 ms to 3,102 ms &mdash; 39% of the platform's budget &mdash; and not one decision changed. Putting a model in the path that gates spending would be the vulnerability, in a challenge whose whole point is text trying to talk a decider into approving.</p></div>
+
+  <div class="qa"><b>&ldquo;How do you know it is not hard-coded to the scenarios?&rdquo;</b>
+    <p>A test rewrites <code>scenario_id</code>, <code>request_id</code> and <code>replay_order</code> on every event and asserts the decisions are unchanged. Nothing in the engine reads any of the three.</p></div>
+
+  <div class="qa"><b>&ldquo;Why did it decline 23 of 45? Isn't that over-blocking?&rdquo;</b>
+    <p>Every decline traces to a stated customer rule, and the evidence panel names which. Two attempts exist specifically to catch over-blocking &mdash; a new but compliant seller and a legitimate re-quote after a decline &mdash; and both are approved. SCEN0001 declines five in a row only because the customer's own CHF 300 weekly limit was reached.</p></div>
+
+  <div class="qa"><b>&ldquo;What happens if the customer never answers?&rdquo;</b>
+    <p>Nothing is sent. We measured the live API: an unanswered purchase moves to <code>timed_out</code> on its own at exactly 120 seconds. A decline we submitted would be recorded as the customer's decision when they never made one &mdash; which the guide explicitly forbids. Lapsing is the absence of an answer, not an answer.</p></div>
+
+  <div class="qa"><b>&ldquo;Could a merchant get a purchase approved by writing the right text?&rdquo;</b>
+    <p>No, and not because we filter well. The sanitiser returns data and holds no reference to the policy, and facts are extracted by patterns that can only yield a number or a token. There is no code path by which merchant text reaches the verdict.</p></div>
+
+  <div class="qa"><b>&ldquo;What is the weakest part?&rdquo;</b>
+    <p>The instruction compiler is regex-based, so it handles phrasings we anticipated and misses others. The mitigation is that everything it extracts is shown back before confirmation, so a bad reading is visible rather than silent. Two tuned numbers &mdash; familiarity at one prior purchase, a three-hour duplicate window &mdash; are judgements, not measurements.</p></div>
+
+  <div class="qa"><b>&ldquo;Would this scale?&rdquo;</b>
+    <p>The engine is a pure function with no I/O, so it scales horizontally without coordination. Two things would not: familiarity currently loads all 4,701 history rows at import and should be a query, and the control session is a JSON file rather than a database.</p></div>
+
+  <p class="num" style="margin-top:8mm">08 &mdash; Presentation</p>
+  <hr class="rule">
+  <h2>The three-minute path</h2>
+  <table>
+    <thead><tr><th class="n">Min</th><th>Show</th><th>Requirement</th></tr></thead>
+    <tbody>
+      <tr><td class="n">0:00</td><td>Compile a policy, point at the questions we refuse to answer</td><td>Customer control</td></tr>
+      <tr><td class="n">0:50</td><td>Authorise, run SCEN0004, point at AU0035 approved in 0.39 ms</td><td><strong>1. Ordinary, no friction</strong></td></tr>
+      <tr><td class="n">1:30</td><td>Expand AU0040's findings &mdash; inside every limit, stopped by its own description</td><td><strong>2. Useful intervention</strong></td></tr>
+      <tr><td class="n">2:20</td><td>Answer one paused purchase, let the second lapse, then revoke</td><td><strong>3. Human path</strong></td></tr>
+      <tr><td class="n">3:00</td><td><code>leash run --scenario SCEN0004</code> against the live sandbox</td><td>It is real</td></tr>
+    </tbody>
+  </table>
+
+  <div class="foot">
+    <span>Agent on a Leash &middot; Team PrismAI &middot; Technical Report</span>
+    <span>leash/0.1.0 &middot; 301 tests</span>
+  </div>
+</section>
+
+</body>
+</html>

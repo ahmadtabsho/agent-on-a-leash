@@ -1,174 +1,167 @@
-# Agent on a Leash — Wallet Control Layer
+# Agent on a Leash
 
-A trust and control layer that decides whether an AI shopping agent may spend a
-customer's money. Built for the **Viseca × START Global / Swiss {ai} Weeks 2026**
-challenge ([brief](docs/challenge/challenge.md)).
+A wallet control layer for AI shopping agents. Built for the Viseca challenge at
+START Global / Swiss {ai} Weeks 2026 ([brief](docs/challenge/challenge.md)).
 
-For every purchase an agent proposes, this system returns one of three decisions
-inside the platform's 8-second deadline, with the evidence it used:
+An AI assistant that can pay with your card needs something deciding whether it
+may. That's this. For each purchase the agent proposes, we return `approve`,
+`decline`, or `step_up` (pause and ask the customer), inside the platform's
+8-second deadline, with the evidence we used.
 
-| Decision | Meaning |
-| --- | --- |
-| `approve` | Allow this purchase. |
-| `decline` | Stop this purchase. |
-| `step_up` | Pause and ask the customer to approve or decline. |
+We don't build the shopping agent, payment processing, or merchant databases.
+The challenge supplies those.
 
-We build the **wallet control layer only** — not the shopping agent, not payment
-processing, not merchant databases.
+## Where it stands
 
-## Design commitments
+All 45 supplied purchases run against the live Viseca sandbox: 17 approved, 23
+declined, 5 sent back to the customer. No parse failures, no missed deadlines.
+Slowest decision 2.88 ms against an 8000 ms budget. Offline replay gives the
+same counts, which is the main reason we trust it.
 
-These are the constraints the challenge grades on, and they shape every module:
+299 tests.
 
-1. **The customer holds the leash.** A mandate is drafted, shown back in plain
-   language, and only becomes active once confirmed. It can be tightened or
-   revoked at any time. Neither the agent nor the shop can change it.
-   Ambiguities that prevent safe compilation must be answered first; the
-   revised instruction and rules are shown again before confirmation.
-2. **Merchant text is untrusted input.** `item_details` is mined for product
-   facts (size, return window) and scanned for injection. It can never alter a
-   rule. A purchase carrying an instruction aimed at the decision engine is
-   evidence *against* that purchase, never for it.
-3. **Deterministic core, advisory model.** Rules, limits and signals decide.
-   An optional small language model advises on fuzzy intent matching and may
-   rewrite a code-generated clarification question under a hard timeout. Code
-   still chooses when to ask and the only answers allowed. If the model is
-   slow, wrong-shaped or absent, a deterministic question is used.
-4. **No answer key.** Nothing keys off a scenario ID, request ID or position in
-   the sequence. The engine sees only policy plus purchase facts.
-5. **Decoupled UI and engine.** They deploy and scale independently, per Viseca's
-   stated intent to fold the control UI into the existing `one` app.
+## Quick start
+
+```bash
+cp .env.example .env
+make setup
+make test
+make demo
+```
+
+`make demo` needs no API key — it runs the supplied scenarios offline and shows
+the three things the brief asks for.
+
+To see the interface, run the two processes separately (they deploy separately
+too):
+
+```bash
+make serve    # control API on :8000
+make ui       # control interface on :5173
+```
+
+With `TEAM_API_KEY` and `LEASH_BASE_URL` in `.env`:
+
+```bash
+make health                                   # checks the key is accepted, not just present
+.venv/bin/leash run --scenario SCEN0004       # compile, confirm, run, decide, resolve
+```
+
+## How it decides
+
+Seven stages, in order. Each adds to a shared evidence list, and the verdict
+comes from that list at the end rather than from an early return, so the
+explanation always covers everything we looked at.
+
+1. Parse and validate against the platform's own JSON schema, then our types
+2. Check preconditions — mandate, authority and card status
+3. Sanitise merchant text: read it for facts, never obey it
+4. Evaluate the customer's confirmed rules (they combine with AND)
+5. Check the basket is actually what was asked for
+6. Weigh behavioural signals — familiarity, velocity, lookalikes, duplicates
+7. Resolve: a breach declines, anything unsettled falls to the customer's own
+   uncertainty policy, only a clean pass approves
+
+The engine is a pure function of `(event, run state)`. No network, no I/O. That
+keeps it fast, testable offline, and unable to be influenced by anything a
+merchant writes.
+
+### Four things worth knowing
+
+**Merchant text is read, never obeyed.** `item_details` carries useful facts
+(size, return window) and is written by whoever wants the payment approved. We
+extract facts by pattern, so no phrasing can produce a permission, and the
+scanner holds no reference to the policy.
+
+**"Uncertain" is a separate answer from "no".** A seller who states no return
+window hasn't offered a zero-day one. Collapsing uncertainty into a refusal
+blocks ordinary shopping; collapsing it into approval waves through what nobody
+checked. The customer's own stated preference settles it.
+
+**A live policy can only be tightened.** Rules AND together, so adding one can
+only narrow what's allowed. Adding `<= CHF 200` on top of `<= CHF 120` doesn't
+raise the limit, and we say so rather than let the customer assume otherwise.
+
+**The optional model can't approve anything.** It answers one question, never
+sees the policy, and can only raise doubt. Off by default.
+
+## Commands
+
+```
+leash check                     verify the data pack against its manifest
+leash health                    probe the sandbox and validate the key
+leash policy "<instruction>"    compile an instruction into rules and questions
+leash validate <file.json>      check a JSON file against the event contract
+leash replay [--evidence]       replay the supplied scenarios offline
+leash demo                      the three demonstration moments
+leash worker                    poll the sandbox and answer live purchases
+leash run --scenario SCEN0004   the whole live sequence end to end
+```
 
 ## Layout
 
-| Path | What it holds |
-| --- | --- |
-| `engine/` | Python decision engine, sandbox API client, and long-poll worker |
-| `ui/` | React control surface: policy management and the step-up inbox |
-| `data/` | Vendored synthetic data pack (45 attempts, 4,701 history rows, schemas) |
-| `docs/challenge/` | Upstream challenge brief and API contract, unmodified |
-| `docs/reference/` | Partner-supplied reference material |
-| `scripts/` | Offline replay and developer helpers |
-
-### Commands
-
-| Command | What it does |
-| --- | --- |
-| `leash check` | Verify the data pack against its manifest |
-| `leash health` | Probe the hosted sandbox |
-| `leash policy "<instruction>"` | Compile an instruction into checks, guidance and questions |
-| `leash validate <file.json>` | Check a JSON file against the event contract |
-| `leash replay [--evidence]` | Replay the supplied scenarios offline |
-| `leash demo` | The three demonstration moments |
-| `leash worker` | Poll the sandbox and answer live purchases |
-| `leash run --scenario SCEN0004` | The whole live sequence: compile, confirm, run, decide, resolve |
-
-## Status
-
-| # | Step | State |
-| --- | --- | --- |
-| 1 | Repo skeleton, vendored data pack | done |
-| 2 | Domain model and event parser | done |
-| 3 | Policy compiler (instruction to rules) | done |
-| 4 | Decision engine | done |
-| 5 | Offline replay harness | done |
-| 6 | Sandbox API client and worker | done |
-| 7 | Control UI | done |
-| 8 | LLM assist with fallback | done |
-| 9 | Demo script and architecture doc | done |
-| 10 | One-command live run (`leash run`) | done |
-| 11 | Step-up timeout and countdown | done |
-| 12 | Session persistence | done |
-
-Running live against the Viseca sandbox: all 45 purchases answered, 17 approved,
-23 declined, 5 brought to the customer. Zero parse failures, zero missed
-deadlines, slowest decision 2.88 ms against an 8,000 ms budget.
-
-## Getting started
-
-```bash
-cp .env.example .env     # add TEAM_API_KEY on event day
-make setup               # create the venv and install the engine
-make check               # verify the vendored data pack against its manifest
-make test                # run the suite
+```
+engine/          decision engine, sandbox client, worker, optional model layer
+  src/leash/
+    models/      typed event contract, Decimal money, closed vocabularies
+    policy/      instruction -> rules, guidance, open questions
+    decision/    the seven stages, fact resolution, sanitiser, run state
+    replay/      offline harness and the decision journal
+    api/         sandbox client and the control plane
+  tests/
+ui/              React control surface
+data/            the supplied synthetic pack, verified by sha256 on every run
+docs/            report, pipeline walkthrough, code map
+deck/            pitch deck
 ```
 
-Optional intent and clarification wording uses OpenRouter with the lightweight
-`google/gemini-2.5-flash-lite` model. Put an OpenRouter key in `.env` to enable
-it; without a key the same decisions and code-generated questions still work:
+## The optional model
+
+Off unless you enable it. Three providers work — OpenRouter, OpenAI, Anthropic —
+and switching is one line:
 
 ```bash
 LEASH_LLM_ENABLED=true
+LEASH_LLM_PROVIDER=openrouter
 LEASH_LLM_MODEL=google/gemini-2.5-flash-lite
-OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_API_KEY=...
 ```
 
-During policy drafting, code identifies unexecutable ambiguity such as a
-spending minimum. Gemini phrases the question and, after the customer answers,
-rewrites the instruction. The deterministic compiler rebuilds the rules and
-the customer reviews and confirms that new draft before it can take effect.
-Known contradictions also block confirmation: incompatible categories,
-uncertainty behavior, quantities, countries or merchants; a rolling limit
-below the per-purchase limit; and recurring purchases combined with a ban on
-subscriptions.
+It does two things. It gives a second opinion on whether a cart line is the item
+the customer described, and it rewords a clarification question that the
+compiler generated but phrased awkwardly. Code decides *when* to ask and what
+answers are acceptable; the model only changes wording.
 
-The interface's **Demo settings** panel can turn AI assistance and the
-expandable **Where AI was used** details on or off. It can also simulate a
-timeout, invalid response, or missing key. In every failure mode, known policy
-conflicts stay blocked and purchase uncertainty still produces a deterministic
-question. Editing and redrafting the instruction remains available when Gemini
-cannot rewrite it.
+We measured it before deciding the default. With the model on, the slowest
+decision went from 0.97 ms to about 3100 ms — 39% of the platform's budget — and
+not one decision changed. So it's off. There's a test asserting that a broken
+model (timeout, prose instead of JSON, an unknown verdict) gives decisions
+identical to no model at all.
 
-Check any JSON file against the published event contract, or see what an
-instruction compiles to:
+## Known rough edges
 
-```bash
-.venv/bin/leash validate path/to/event.json
-.venv/bin/leash policy "Buy groceries under CHF 50. Ask me when uncertain."
-.venv/bin/leash policy --scenario SCEN0002 --json
-```
-
-Replay every supplied scenario offline, with no network and no API key:
-
-```bash
-make replay                      # all 45 attempts, every decision
-make demo                        # the three things the brief asks to show
-.venv/bin/leash replay --scenario SCEN0004 --evidence
-```
-
-Run the interface. The control API and the UI are separate processes, as they
-would be deployed:
-
-```bash
-make serve                       # control API on :8000
-make ui                          # control interface on :5173
-```
-
-On the event day, with `TEAM_API_KEY` set in `.env`:
-
-```bash
-make health                      # verifies the key is actually accepted, not just present
-make run                         # the whole sequence for SCEN0000
-
-.venv/bin/leash run --scenario SCEN0004 --log runs/live.jsonl
-```
-
-The hosted sandbox needs no key for its health probe:
-
-```bash
-make health
-```
+- `GET /v1/events` is implemented in the client but nothing calls it. It'd
+  matter for recovering cleanly from a network drop mid-run.
+- Two numbers are judgement calls rather than measurements: merchant
+  familiarity at one prior approved purchase, and a three-hour duplicate
+  window. Both hold on the supplied data. The compiler does ask the customer to
+  set the first one properly.
+- The instruction compiler is regex-based, so it handles the phrasings we
+  anticipated and misses others. Everything it extracts is shown back before
+  confirmation, so a bad reading is visible rather than silent, but it's the
+  weakest part.
+- The UI exposes one-click tightening only. Adding a brand-new rule works
+  through the API but has no button.
+- Merchant familiarity loads all 4701 history rows at import. Fine here, wrong
+  shape at real scale.
 
 ## Documentation
 
 | Where | What |
 | --- | --- |
-| [submission/](submission/) | The recording guide, the 200×200 thumbnail, and the submission ZIP. |
-| [docs/report/](docs/report/) | The full project report as a 12-page A4 PDF, and the HTML it renders from. |
-| [deck/](deck/) | The pitch deck, as an editable `.pptx` and a `.pdf`. |
-| [docs/what-is-ours.md](docs/what-is-ours.md) | What arrives with the challenge, and what we build on top of it. |
-| [docs/build-log.html](docs/build-log.html) | The short version: what was built, what broke, what is still open. Also at <https://claude.ai/artifact/M86MXuuuDzosJKDHQBHZMT> (private). |
-| [docs/pipeline.html](docs/pipeline.html) | The full walkthrough: the seven stages, the traps each one prevents, the bugs found, and what is still open. Also published at <https://claude.ai/artifact/9zgVZWPAdzvjm9gnNkUeso> (private). |
-| [docs/code-map.md](docs/code-map.md) | What calls what, one decision traced end to end, and an ordered list of what is still missing. |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | How a decision is produced, in brief. |
-| [docs/challenge/](docs/challenge/) | The upstream brief and API contract, unmodified. |
+| [docs/report/](docs/report/) | Full project report, 12-page PDF |
+| [docs/code-map.md](docs/code-map.md) | What calls what, one decision traced end to end |
+| [docs/pipeline.html](docs/pipeline.html) | The seven stages in depth, and the traps each prevents |
+| [docs/what-is-ours.md](docs/what-is-ours.md) | The boundary between what the challenge supplies and what we wrote |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | The same pipeline, one page |
+| [docs/challenge/](docs/challenge/) | The upstream brief and API contract, unmodified |

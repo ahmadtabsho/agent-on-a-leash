@@ -44,7 +44,16 @@ _NUM = r"(?P<count>\d+|" + "|".join(NUMBER_WORDS) + r")"
 _UNIT = r"(?P<unit>" + "|".join(DAYS_PER_UNIT) + r")"
 
 # "across any seven days", "over 7 days", "in any 30 days", "per week"
-PERIOD = re.compile(rf"(?:across|over|within|in|per|every)\s+(?:any\s+)?{_NUM}?\s*{_UNIT}", re.IGNORECASE)
+# Two shapes, because both are ordinary English for the same thing:
+#   "across any seven days", "per week", "in 30 days"   — a preposition leads
+#   "CHF 300 a week", "CHF 50 a day"                      — no preposition at all
+# Missing the second shape read a weekly budget as a per-order cap, which is a
+# far more permissive policy than the customer wrote.
+PERIOD = re.compile(
+    rf"(?:(?:across|over|within|in|per|every|each)\s+(?:any\s+|a\s+|an\s+)?{_NUM}?\s*{_UNIT}"
+    rf"|\ba\s*n?\s+(?P<bare_unit>" + "|".join(DAYS_PER_UNIT) + r"))",
+    re.IGNORECASE,
+)
 
 # "returned within 14 days or more", "returnable for at least 30 days"
 RETURN_WINDOW = re.compile(
@@ -54,7 +63,12 @@ RETURN_WINDOW = re.compile(
 
 AT_MOST = re.compile(
     r"or\s+less|or\s+below|no\s+more\s+than|not?\s+more\s+than|up\s+to|at\s+or\s+below"
-    r"|below|under|maximum|max\b|at\s+most|cap(?:ped)?\s+at|not\s+exceed",
+    r"|below|under|maximum|max\b|at\s+most|cap(?:ped)?\s+at|not\s+exceed"
+    # A negated "more than" is a ceiling, not a floor. "Never spend more than
+    # CHF 500" read as a minimum inverts the customer's intent completely, so
+    # these must beat the AT_LEAST patterns below.
+    r"|never\s+\w*\s*(?:more\s+than|above|over|exceed)"
+    r"|(?:don'?t|do\s+not|never)\s+(?:spend|pay|go|let\s+\w+\s+go)\s+\w*\s*(?:more|above|over|beyond)",
     re.IGNORECASE,
 )
 AT_LEAST = re.compile(
@@ -287,7 +301,9 @@ def _extract_amounts(text: str) -> tuple[list[CompiledRule], list[str], list[str
             period = PERIOD.search(clause)
             days = None
             if period:
-                unit_days = DAYS_PER_UNIT[period.group("unit").lower()]
+                # "per week" fills `unit`; "a week" fills `bare_unit`.
+                unit = period.group("unit") or period.group("bare_unit")
+                unit_days = DAYS_PER_UNIT[unit.lower()]
                 count = _number(period.group("count"))
                 days = unit_days * count if count else unit_days
             elif re.search(r"\bweekly\b", clause, re.IGNORECASE):

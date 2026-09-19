@@ -373,3 +373,52 @@ def test_the_requested_item_excludes_who_it_is_for_and_where_from(instruction, e
     policy = compile_policy(instruction)
     rule = rule_for(policy, "derived.requested_item")
     assert (rule.value if rule else None) == expected
+
+
+@pytest.mark.parametrize(
+    ("instruction", "field", "period_days"),
+    [
+        # A preposition leads the period.
+        ("Buy groceries for up to CHF 300 per week.", "derived.spend_in_period_chf", 7),
+        ("Keep the total across any seven days under CHF 300.", "derived.spend_in_period_chf", 7),
+        ("Spend no more than CHF 300 in 30 days.", "derived.spend_in_period_chf", 30),
+        # No preposition at all — ordinary English, and previously read as a
+        # per-order cap, which is a far more permissive policy.
+        ("Spend no more than CHF 300 a week on groceries.", "derived.spend_in_period_chf", 7),
+        ("Keep groceries under CHF 50 a day.", "derived.spend_in_period_chf", 1),
+        # No period mentioned: this really is per order.
+        ("Keep each order under CHF 120.", "authorization.billing_amount_chf", None),
+        ("Do not spend more than CHF 200 per order.", "authorization.billing_amount_chf", None),
+    ],
+)
+def test_a_period_budget_is_not_read_as_a_per_order_cap(instruction, field, period_days):
+    rule = rule_for(compile_policy(instruction), field)
+    assert rule is not None, f"{instruction!r} produced no {field}"
+    assert rule.period_days == period_days
+
+
+@pytest.mark.parametrize(
+    "instruction",
+    [
+        "Never spend more than CHF 500 on groceries.",
+        "Do not spend more than CHF 500 on groceries.",
+        "Don't spend more than CHF 500 on groceries.",
+        "Never go above CHF 500 on groceries.",
+    ],
+)
+def test_a_negated_more_than_is_a_ceiling_not_a_floor(instruction):
+    """"More than" alone reads as a minimum. Negated, it is the opposite, and
+    reading it as a floor inverts the customer's intent completely."""
+    policy = compile_policy(instruction)
+    amounts = [r for r in policy.hard_rules if "amount" in r.field or "spend_in_period" in r.field]
+    assert amounts, f"{instruction!r} produced no spending limit at all"
+    assert all(r.operator is Operator.LTE for r in amounts)
+    assert all(r.value == 500.0 for r in amounts)
+
+
+def test_a_genuine_floor_is_still_questioned_rather_than_inverted():
+    """The fix must not turn every "more than" into a limit — an actual
+    minimum is something only the customer can resolve."""
+    policy = compile_policy("Spend at least CHF 500 on groceries every week.")
+    assert not [r for r in policy.hard_rules if "amount" in r.field or "spend_in_period" in r.field]
+    assert any("minimum" in q for q in policy.open_questions)

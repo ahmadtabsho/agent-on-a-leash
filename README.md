@@ -163,6 +163,7 @@ make health
 
 | Where | What |
 | --- | --- |
+| [submission/](submission/) | The recording guide, the 200×200 thumbnail, and the submission ZIP. |
 | [docs/report/](docs/report/) | The full project report as a 12-page A4 PDF, and the HTML it renders from. |
 | [deck/](deck/) | The pitch deck, as an editable `.pptx` and a `.pdf`. |
 | [docs/what-is-ours.md](docs/what-is-ours.md) | What arrives with the challenge, and what we build on top of it. |

@@ -40,6 +40,7 @@ class DecisionRecord:
     customer_message: str
     evidence: list[dict]
     elapsed_ms: float
+    clarification: dict | None = None
     resolved_by_customer: str | None = None
 
     @classmethod
@@ -60,6 +61,9 @@ class DecisionRecord:
             customer_message=verdict.customer_message,
             evidence=[f.to_payload() for f in verdict.findings],
             elapsed_ms=round(verdict.elapsed_ms, 3),
+            clarification=(
+                verdict.clarification.to_payload() if verdict.clarification else None
+            ),
         )
 
     def to_json(self) -> str:

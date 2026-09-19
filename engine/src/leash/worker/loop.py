@@ -55,6 +55,7 @@ class PendingReview:
     billing_amount_chf: float
     customer_message: str
     evidence: list[dict]
+    clarification: dict | None
     raised_at: datetime
     expires_at: datetime | None = None
     lapsed: bool = False
@@ -183,6 +184,9 @@ class Worker:
                 billing_amount_chf=float(auth.billing_amount_chf),
                 customer_message=verdict.customer_message,
                 evidence=[f.to_payload() for f in verdict.findings],
+                clarification=(
+                    verdict.clarification.to_payload() if verdict.clarification else None
+                ),
                 raised_at=raised,
                 expires_at=raised + timedelta(seconds=window) if window else None,
             )

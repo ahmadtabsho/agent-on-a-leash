@@ -20,6 +20,7 @@ import time
 from dataclasses import dataclass
 
 from ..llm.advisor import Advice, IntentAdvisor
+from ..llm.clarifier import ClarificationPlanner
 from ..models.enums import (
     AuthorityStatus,
     CardStatus,
@@ -54,11 +55,13 @@ class DecisionEngine:
         history: CardHistory | None = None,
         config: EngineConfig | None = None,
         advisor: IntentAdvisor | None = None,
+        clarifier: ClarificationPlanner | None = None,
     ):
         self.history = history if history is not None else default_history()
         self.config = config or EngineConfig()
-        # Optional. Everything below decides identically without it.
-        self.advisor = advisor
+        # Optional. Everything below decides identically when it is unavailable.
+        self.advisor = advisor if advisor is not None else IntentAdvisor()
+        self.clarifier = clarifier or ClarificationPlanner()
 
     # --- stages ------------------------------------------------------------
 
@@ -301,6 +304,10 @@ class DecisionEngine:
         if decision is Decision.STEP_UP:
             reason_codes.insert(0, "customer_confirmation")
 
+        clarification = None
+        if decision is Decision.STEP_UP and unsettled:
+            clarification = self.clarifier.plan(unsettled[0])
+
         return Verdict(
             decision=decision,
             findings=ledger.findings,
@@ -308,6 +315,7 @@ class DecisionEngine:
             customer_message=message,
             engine_version=self.config.engine_version,
             fell_back_to_policy=fallback,
+            clarification=clarification,
             elapsed_ms=(time.perf_counter() - started) * 1000,
         )
 

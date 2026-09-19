@@ -7,11 +7,88 @@ function money(chf) {
   return `CHF ${Number(chf).toFixed(2)}`
 }
 
+function modelName(model) {
+  return model === 'google/gemini-2.5-flash-lite' ? 'Gemini 2.5 Flash Lite' : model
+}
+
+function AIActivity({ activity }) {
+  if (!activity?.length) return null
+  return (
+    <details className="ai-activity">
+      <summary>Where AI was used</summary>
+      {activity.map((item, index) => (
+        <dl key={`${item.task}-${index}`}>
+          <div><dt>Model</dt><dd>{modelName(item.model)}</dd></div>
+          <div><dt>Task</dt><dd>{item.task}</dd></div>
+          <div><dt>Result</dt><dd>{item.result}</dd></div>
+          <div><dt>Latency</dt><dd>{Number(item.latency_ms).toFixed(1)} ms</dd></div>
+          <div><dt>Fallback used</dt><dd>{item.fallback_used ? 'Yes' : 'No'}</dd></div>
+          <div><dt>Status</dt><dd>{item.status.replaceAll('_', ' ')}</dd></div>
+        </dl>
+      ))}
+    </details>
+  )
+}
+
+function SettingsPanel({ settings, onChange, busy }) {
+  if (!settings) return null
+  const update = (patch) => onChange({ ...settings, ...patch })
+  return (
+    <details className="card settings-card">
+      <summary>Demo settings</summary>
+      <label className="setting-row">
+        <span><b>Use AI assistance</b><small>Policy and purchase clarification</small></span>
+        <input
+          type="checkbox"
+          checked={settings.ai_enabled}
+          disabled={busy}
+          onChange={(event) => update({ ai_enabled: event.target.checked })}
+        />
+      </label>
+      <label className="setting-row">
+        <span><b>Show AI activity</b><small>Model, task, latency, result and fallback</small></span>
+        <input
+          type="checkbox"
+          checked={settings.show_ai_activity}
+          disabled={busy}
+          onChange={(event) => update({ show_ai_activity: event.target.checked })}
+        />
+      </label>
+      <label className="setting-select">
+        <span><b>AI failure demo</b><small>Simulate a provider problem without making a failed call</small></span>
+        <select
+          value={settings.ai_failure_mode}
+          disabled={busy || !settings.ai_enabled}
+          onChange={(event) => update({ ai_failure_mode: event.target.value })}
+        >
+          <option value="none">Normal</option>
+          <option value="timeout">Timeout</option>
+          <option value="invalid_response">Invalid response</option>
+          <option value="missing_key">Missing key</option>
+        </select>
+      </label>
+    </details>
+  )
+}
+
 /** What the system understood, shown back before anything is authorised. */
-function PolicyReview({ policy, mandate, onConfirm, busy }) {
+function PolicyReview({ policy, mandate, onConfirm, onRefine, busy, settings, modelAvailable }) {
+  const [answers, setAnswers] = useState({})
+  useEffect(() => setAnswers({}), [policy?.instruction])
   if (!policy) return null
   const active = mandate?.status === 'active'
   const revoked = mandate?.status === 'revoked'
+  const questions = policy.policy_questions || policy.open_questions.map((question, index) => ({
+    id: `policy-q-${index + 1}`,
+    question,
+    blocking: false,
+    generated_by: 'code',
+  }))
+  const blocking = questions.filter((question) => question.blocking)
+  const canRefine = blocking.length > 0 && blocking.every((q) => answers[q.id]?.trim())
+  const canUsePolicyAI = settings?.ai_enabled
+    && settings.ai_failure_mode === 'none'
+    && modelAvailable
 
   return (
     <div className="card">
@@ -40,12 +117,50 @@ function PolicyReview({ policy, mandate, onConfirm, busy }) {
         </div>
       )}
 
-      {policy.open_questions.length > 0 && (
+      {questions.length > 0 && (
         <div className="block questions">
           <h3>We need you to decide</h3>
-          <ul>{policy.open_questions.map((q, i) => <li key={i}>{q}</li>)}</ul>
+          <ul>
+            {questions.map((item) => (
+              <li key={item.id}>
+                <span>{item.question}</span>
+                {item.generated_by !== 'code' && <span className="ai-tag">Gemini</span>}
+                {item.blocking && canUsePolicyAI && (
+                  <textarea
+                    className="answer"
+                    value={answers[item.id] || ''}
+                    onChange={(event) => setAnswers({ ...answers, [item.id]: event.target.value })}
+                    placeholder="Tell us what you meant"
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
+          {blocking.length > 0 && (
+            canUsePolicyAI ? (
+              <button
+                className="primary"
+                disabled={busy || !canRefine}
+                onClick={() => onRefine(
+                  blocking.map((question) => ({
+                    question_id: question.id,
+                    answer: answers[question.id],
+                  })),
+                )}
+              >
+                Apply my answers and check again
+              </button>
+            ) : (
+              <p className="empty">
+                AI is unavailable or disabled. Edit the instruction above and check it again;
+                this policy cannot be confirmed while the conflict remains.
+              </p>
+            )
+          )}
         </div>
       )}
+
+      {settings?.show_ai_activity && <AIActivity activity={policy.ai_activity} />}
 
       <div className="block">
         <h3>When we cannot settle a purchase</h3>
@@ -60,9 +175,9 @@ function PolicyReview({ policy, mandate, onConfirm, busy }) {
 
       <div className="row">
         {!active && !revoked && (
-          <button className="primary" onClick={onConfirm} disabled={busy}>
-            These are right — authorise them
-          </button>
+            <button className="primary" onClick={onConfirm} disabled={busy || blocking.length > 0}>
+              These are right — authorise them
+            </button>
         )}
         {active && <span className="stamp">Authorised {mandate.confirmed_at?.slice(11, 19)} UTC</span>}
         {revoked && <span className="stamp">Permission withdrawn — nothing can be spent.</span>}
@@ -72,7 +187,7 @@ function PolicyReview({ policy, mandate, onConfirm, busy }) {
 }
 
 /** One decision, with the evidence that produced it. */
-function Step({ step }) {
+function Step({ step, showAI }) {
   const adverse = step.evidence.filter((e) => e.outcome !== 'pass')
   return (
     <li className="step">
@@ -101,6 +216,7 @@ function Step({ step }) {
           </ul>
         </details>
       )}
+      {showAI && <AIActivity activity={step.ai_activity} />}
     </li>
   )
 }
@@ -120,7 +236,7 @@ function useCountdown(pending) {
 }
 
 /** Purchases paused for the customer. Only they can answer, and only in time. */
-function Inbox({ pending, lapsed, onResolve, busy }) {
+function Inbox({ pending, lapsed, onResolve, busy, showAI }) {
   const secondsLeft = useCountdown(pending)
 
   if (pending.length === 0 && lapsed.length === 0) {
@@ -142,6 +258,11 @@ function Inbox({ pending, lapsed, onResolve, busy }) {
       )}
       {pending.map((item) => {
         const left = secondsLeft(item.expires_at)
+        const clarification = item.clarification
+        const choices = clarification?.choices || [
+          { id: 'approve_once', label: 'Yes, buy it', decision: 'approve' },
+          { id: 'decline_once', label: 'No, stop it', decision: 'decline' },
+        ]
         return (
         <div className="inbox-item" key={item.authorization_id}>
           <div className="step-head">
@@ -154,7 +275,8 @@ function Inbox({ pending, lapsed, onResolve, busy }) {
             )}
             <span className="meta">{item.source_authorization_id}</span>
           </div>
-          <p className="why">{item.customer_message}</p>
+          <p className="question">{clarification?.question || item.customer_message}</p>
+          {clarification && <p className="why">Why we asked: {item.customer_message}</p>}
           <ul className="lines">
             {item.items.map((line) => (
               <li key={line.line_no}>
@@ -163,21 +285,18 @@ function Inbox({ pending, lapsed, onResolve, busy }) {
             ))}
           </ul>
           <div className="row">
-            <button
-              className="ok"
-              disabled={busy}
-              onClick={() => onResolve(item.authorization_id, 'approve')}
-            >
-              Yes, buy it
-            </button>
-            <button
-              className="stop"
-              disabled={busy}
-              onClick={() => onResolve(item.authorization_id, 'decline')}
-            >
-              No, stop it
-            </button>
+            {choices.map((choice) => (
+              <button
+                key={choice.id}
+                className={choice.decision === 'approve' ? 'ok' : 'stop'}
+                disabled={busy}
+                onClick={() => onResolve(item.authorization_id, choice.decision)}
+              >
+                {choice.label}
+              </button>
+            ))}
           </div>
+          {showAI && <AIActivity activity={item.ai_activity} />}
         </div>
         )
       })}
@@ -204,6 +323,7 @@ function Inbox({ pending, lapsed, onResolve, busy }) {
 
 export default function App() {
   const [health, setHealth] = useState(null)
+  const [settings, setSettings] = useState(null)
   const [instruction, setInstruction] = useState('')
   const [policy, setPolicy] = useState(null)
   const [mandate, setMandate] = useState(null)
@@ -227,7 +347,12 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    api.health().then(setHealth).catch((e) => setError(e.message))
+    Promise.all([api.health(), api.settings()])
+      .then(([healthData, settingsData]) => {
+        setHealth(healthData)
+        setSettings(settingsData)
+      })
+      .catch((e) => setError(e.message))
   }, [])
 
   // Re-read the inbox while anything is waiting, so a window that closes on
@@ -255,6 +380,12 @@ export default function App() {
     setRun(null)
   }
 
+  const updateSettings = (next) =>
+    guard(async () => {
+      const saved = await api.updateSettings(next)
+      setSettings(saved)
+    })
+
   const draft = () =>
     guard(async () => {
       const data = await api.draft(instruction)
@@ -267,6 +398,15 @@ export default function App() {
     guard(async () => {
       const data = await api.confirm()
       setMandate(data.mandate)
+    })
+
+  const refine = (answers) =>
+    guard(async () => {
+      const data = await api.refine(answers)
+      setInstruction(data.policy.instruction)
+      setPolicy(data.policy)
+      setMandate(data.mandate)
+      setRun(null)
     })
 
   const start = (scenarioId) =>
@@ -326,6 +466,8 @@ export default function App() {
 
       {error && <div className="error">{error}</div>}
 
+      <SettingsPanel settings={settings} onChange={updateSettings} busy={busy} />
+
       <div className="card">
         <h2>What may the agent buy?</h2>
         <p className="hint">Write it however you would say it. We turn it into checks you can see.</p>
@@ -362,7 +504,15 @@ export default function App() {
         )}
       </div>
 
-      <PolicyReview policy={policy} mandate={mandate} onConfirm={confirm} busy={busy} />
+      <PolicyReview
+        policy={policy}
+        mandate={mandate}
+        onConfirm={confirm}
+        onRefine={refine}
+        busy={busy}
+        settings={settings}
+        modelAvailable={health?.policy_clarifier_enabled}
+      />
 
       {active && health && (
         <div className="card">
@@ -379,7 +529,13 @@ export default function App() {
         </div>
       )}
 
-      <Inbox pending={pending} lapsed={lapsed} onResolve={resolve} busy={busy} />
+      <Inbox
+        pending={pending}
+        lapsed={lapsed}
+        onResolve={resolve}
+        busy={busy}
+        showAI={settings?.show_ai_activity}
+      />
 
       {run && (
         <div className="card">
@@ -395,7 +551,11 @@ export default function App() {
           )}
           <ul className="steps">
             {run.steps.map((step) => (
-              <Step key={step.authorization_id} step={step} />
+              <Step
+                key={step.authorization_id}
+                step={step}
+                showAI={settings?.show_ai_activity}
+              />
             ))}
           </ul>
           <div className="tally">

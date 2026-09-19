@@ -10,6 +10,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from leash.api import control
+from leash.config import Settings
+from leash.llm import PolicyClarifier
 
 GROCERIES = (
     "Order our household groceries for delivery. Keep each order at or below CHF 120 "
@@ -26,6 +28,10 @@ MONITOR = (
 def client() -> TestClient:
     c = TestClient(control.app)
     c.post("/api/session/reset")
+    c.put(
+        "/api/settings",
+        json={"ai_enabled": True, "show_ai_activity": True, "ai_failure_mode": "none"},
+    )
     yield c
     c.post("/api/session/reset")
 
@@ -42,6 +48,19 @@ def test_health_reports_the_mode_and_the_supplied_scenarios(client):
     assert body["engine_version"].startswith("leash/")
 
 
+def test_demo_settings_can_disable_ai_details_and_simulate_failure(client):
+    updated = client.put(
+        "/api/settings",
+        json={
+            "ai_enabled": False,
+            "show_ai_activity": False,
+            "ai_failure_mode": "timeout",
+        },
+    )
+    assert updated.status_code == 200
+    assert client.get("/api/settings").json() == updated.json()
+
+
 def test_a_preview_authorises_nothing(client):
     body = client.post("/api/policy/preview", json={"instruction": GROCERIES}).json()
     assert body["hard_rules"]
@@ -53,7 +72,79 @@ def test_a_draft_shows_the_checks_and_the_open_questions(client):
     assert body["mandate"]["status"] == "draft"
     assert body["policy"]["hard_rules"]
     assert body["policy"]["open_questions"]
+    assert body["policy"]["policy_questions"]
     assert all("source" in r for r in body["policy"]["hard_rules"])
+
+
+def test_a_blocking_policy_ambiguity_must_be_answered_and_recompiled(client, monkeypatch):
+    def completion(system, user, *, timeout_s):
+        if "Rewrite one policy clarification" in system:
+            return '{"question":"You gave incompatible amount directions. Which limit did you mean?"}'
+        return '{"instruction":"Buy one ordinary grocery item for CHF 20 or less from a shop I use regularly. Ask me when uncertain."}'
+
+    settings = Settings("https://sandbox.invalid", None, 2500, True, "test-model", 1200)
+    monkeypatch.setattr(control, "POLICY_CLARIFIER", PolicyClarifier(settings, completion))
+    instruction = (
+        "Buy one ordinary grocery item for CHF 20 or less from a shop I use regularly. "
+        "Ask me when uncertain. Buy an item for CHF 30 or more."
+    )
+    draft = client.post("/api/policy/draft", json={"instruction": instruction}).json()
+    blocking = [q for q in draft["policy"]["policy_questions"] if q["blocking"]]
+    assert len(blocking) == 1
+    assert blocking[0]["generated_by"] == "test-model"
+    assert draft["policy"]["ai_activity"][0]["fallback_used"] is False
+    assert client.post("/api/policy/confirm", json={"confirmed": True}).status_code == 409
+
+    refined = client.post(
+        "/api/policy/refine",
+        json={
+            "answers": [
+                {
+                    "question_id": blocking[0]["id"],
+                    "answer": "The CHF 30 sentence was a mistake. Keep the CHF 20 maximum.",
+                }
+            ]
+        },
+    )
+    assert refined.status_code == 200
+    policy = refined.json()["policy"]
+    assert not [q for q in policy["policy_questions"] if q["blocking"]]
+    assert any(rule["value"] == 20.0 for rule in policy["hard_rules"])
+    assert client.post("/api/policy/confirm", json={"confirmed": True}).status_code == 200
+
+
+def test_failure_demo_uses_code_question_and_keeps_confirmation_blocked(client):
+    client.put(
+        "/api/settings",
+        json={"ai_enabled": True, "show_ai_activity": True, "ai_failure_mode": "timeout"},
+    )
+    draft = client.post(
+        "/api/policy/draft",
+        json={"instruction": "Buy only groceries under CHF 20. Buy electronics under CHF 30."},
+    ).json()
+    conflicts = [q for q in draft["policy"]["policy_questions"] if q["blocking"]]
+    assert conflicts and conflicts[0]["generated_by"] == "code"
+    activity = draft["policy"]["ai_activity"][0]
+    assert activity["fallback_used"] is True
+    assert activity["status"] == "simulated_timeout"
+    assert client.post("/api/policy/confirm", json={"confirmed": True}).status_code == 409
+
+
+def test_runtime_failure_demo_still_pauses_with_a_safe_code_question(client):
+    authorise(client, MONITOR)
+    client.put(
+        "/api/settings",
+        json={"ai_enabled": True, "show_ai_activity": True, "ai_failure_mode": "timeout"},
+    )
+
+    body = client.post("/api/runs/SCEN0004").json()
+    paused = [step for step in body["steps"] if step["decision"] == "step_up"]
+
+    assert paused
+    assert all(step["clarification"]["generated_by"] == "code" for step in paused)
+    assert all(step["clarification"]["fallback_used"] is True for step in paused)
+    assert all(step["clarification"]["status"] == "simulated_timeout" for step in paused)
+    assert all(step["clarification"]["question"].endswith("?") for step in paused)
 
 
 def test_nothing_can_be_spent_before_the_customer_confirms(client):
@@ -89,6 +180,12 @@ def test_a_paused_purchase_appears_in_the_inbox(client):
     pending = client.get("/api/pending").json()["pending"]
     assert pending
     assert all(p["decision"] == "step_up" for p in pending)
+    assert all(p["clarification"]["question"].endswith("?") for p in pending)
+    assert all(
+        [choice["decision"] for choice in p["clarification"]["choices"]]
+        == ["approve", "decline"]
+        for p in pending
+    )
 
 
 def test_only_the_customer_answers_a_paused_purchase(client):

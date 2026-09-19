@@ -16,6 +16,7 @@ DEFAULT_BASE_URL = (
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = REPO_ROOT / "data"
 SCHEMA_DIR = DATA_DIR / "schemas"
+DEFAULT_LLM_MODEL = "google/gemini-2.5-flash-lite"
 
 
 def _float_env(name: str, default: float | None) -> float | None:

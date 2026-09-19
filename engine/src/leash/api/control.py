@@ -16,6 +16,7 @@ from dataclasses import asdict, dataclass
 from dataclasses import field as dc_field
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,12 +25,14 @@ from pydantic import BaseModel, Field
 from ..config import Settings
 from ..decision import DecisionEngine, RunState
 from ..decision.state import Recorded
+from ..llm import ClarificationPlanner, IntentAdvisor, PolicyClarifier, PolicyQuestion
 from ..models.enums import Decision, UncertaintyPolicy
 from ..policy import CompiledPolicy, compile_policy, review_amendment
 from ..replay import DecisionLog, DecisionRecord, EventBuilder
 from .store import SessionStore
 
 ENGINE = DecisionEngine()
+POLICY_CLARIFIER = PolicyClarifier()
 BUILDER = EventBuilder()
 
 # The customer's window to answer a paused purchase. The live service reports
@@ -52,11 +55,22 @@ class Mandate:
     guidance: list[str]
     open_questions: list[str]
     uncertainty_policy: str
+    policy_questions: list[dict] = dc_field(default_factory=list)
+    ai_activity: list[dict] = dc_field(default_factory=list)
     status: str = "draft"
     mandate_id: str | None = None
     confirmed_at: str | None = None
     revoked_at: str | None = None
     amendments: list[dict] = dc_field(default_factory=list)
+
+
+@dataclass
+class DemoSettings:
+    """Session-level controls for explaining and demonstrating optional AI."""
+
+    ai_enabled: bool = True
+    show_ai_activity: bool = True
+    ai_failure_mode: str = "none"
 
 
 @dataclass
@@ -69,6 +83,7 @@ class Session:
     pending: dict[str, dict] = dc_field(default_factory=dict)
     lapsed: dict[str, dict] = dc_field(default_factory=dict)
     log: DecisionLog = dc_field(default_factory=DecisionLog)
+    settings: DemoSettings = dc_field(default_factory=lambda: DemoSettings())
 
 
 STORE = SessionStore()
@@ -99,6 +114,11 @@ def _restore() -> Session:
 
     session.pending = payload.get("pending") or {}
     session.lapsed = payload.get("lapsed") or {}
+    if payload.get("settings"):
+        try:
+            session.settings = DemoSettings(**payload["settings"])
+        except TypeError:
+            session.settings = DemoSettings()
 
     # Runs come back for display. Their in-memory RunState is rebuilt from the
     # journal below, so spending limits carry across the restart.
@@ -138,12 +158,18 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def _policy_payload(policy: CompiledPolicy) -> dict:
+def _policy_payload(
+    policy: CompiledPolicy,
+    policy_questions: list[dict] | None = None,
+    ai_activity: list[dict] | None = None,
+) -> dict:
     return {
         "instruction": policy.instruction,
         "uncertainty_policy": policy.uncertainty_policy.value,
         "guidance": policy.guidance,
         "open_questions": policy.open_questions,
+        "policy_questions": policy_questions or [],
+        "ai_activity": ai_activity or [],
         "hard_rules": [
             {**rule.to_payload(), "source": rule.source} for rule in policy.hard_rules
         ],
@@ -157,6 +183,25 @@ def _require_active() -> Mandate:
     if mandate.status != "active":
         raise HTTPException(409, f"The policy is {mandate.status}, not active.")
     return mandate
+
+
+def _demo_engine() -> DecisionEngine:
+    """Apply session demo controls without mutating the production engine."""
+    if SESSION.settings.ai_enabled and SESSION.settings.ai_failure_mode == "none":
+        return ENGINE
+    current = Settings.from_env()
+    disabled = Settings(
+        current.base_url,
+        current.api_key,
+        current.decision_budget_ms,
+        False,
+        current.llm_model,
+        current.llm_timeout_ms,
+    )
+    return DecisionEngine(
+        advisor=IntentAdvisor(disabled),
+        clarifier=ClarificationPlanner(disabled),
+    )
 
 
 # --- request bodies --------------------------------------------------------
@@ -178,6 +223,21 @@ class TightenIn(BaseModel):
 class ResolveIn(BaseModel):
     decision: str
     message: str = ""
+
+
+class PolicyAnswerIn(BaseModel):
+    question_id: str
+    answer: str = Field(min_length=1, max_length=1000)
+
+
+class PolicyRefineIn(BaseModel):
+    answers: list[PolicyAnswerIn] = Field(min_length=1)
+
+
+class DemoSettingsIn(BaseModel):
+    ai_enabled: bool
+    show_ai_activity: bool
+    ai_failure_mode: Literal["none", "timeout", "invalid_response", "missing_key"]
 
 
 # --- app -------------------------------------------------------------------
@@ -206,7 +266,10 @@ def health() -> dict:
         "sandbox_base_url": settings.base_url,
         "team_key_configured": bool(settings.api_key),
         "mode": "sandbox" if settings.api_key else "offline",
-        "advisor_enabled": settings.llm_enabled,
+        "advisor_enabled": bool(ENGINE.advisor and ENGINE.advisor.available),
+        "clarifier_enabled": ENGINE.clarifier.available,
+        "policy_clarifier_enabled": POLICY_CLARIFIER.available,
+        "demo_settings": asdict(SESSION.settings),
         "scenarios": [
             {
                 "scenario_id": sid,
@@ -222,16 +285,40 @@ def health() -> dict:
 # --- policy ----------------------------------------------------------------
 
 
+@app.get("/api/settings")
+def read_settings() -> dict:
+    return asdict(SESSION.settings)
+
+
+@app.put("/api/settings")
+def update_settings(body: DemoSettingsIn) -> dict:
+    SESSION.settings = DemoSettings(**body.model_dump())
+    STORE.save(SESSION)
+    return asdict(SESSION.settings)
+
+
 @app.post("/api/policy/preview")
 def preview_policy(body: InstructionIn) -> dict:
     """Show what an instruction would become, before anything is authorised."""
-    return _policy_payload(compile_policy(body.instruction))
-
-
-@app.post("/api/policy/draft")
-def draft_policy(body: InstructionIn) -> dict:
-    """Create a draft. Nothing is authorised until the customer confirms."""
     policy = compile_policy(body.instruction)
+    review = POLICY_CLARIFIER.review(
+        policy.open_questions,
+        use_ai=SESSION.settings.ai_enabled,
+        failure_mode=SESSION.settings.ai_failure_mode,
+    )
+    questions = [q.to_payload() for q in review.questions]
+    activity = [item.to_payload() for item in review.activity]
+    return _policy_payload(policy, questions, activity)
+
+
+def _store_draft(policy: CompiledPolicy, prior_activity: list[dict] | None = None) -> dict:
+    review = POLICY_CLARIFIER.review(
+        policy.open_questions,
+        use_ai=SESSION.settings.ai_enabled,
+        failure_mode=SESSION.settings.ai_failure_mode,
+    )
+    questions = [q.to_payload() for q in review.questions]
+    activity = list(prior_activity or []) + [item.to_payload() for item in review.activity]
     SESSION.compiled = policy
     SESSION.mandate = Mandate(
         draft_id=f"DRAFT-{datetime.now(timezone.utc).strftime('%H%M%S')}",
@@ -240,9 +327,52 @@ def draft_policy(body: InstructionIn) -> dict:
         guidance=policy.guidance,
         open_questions=policy.open_questions,
         uncertainty_policy=policy.uncertainty_policy.value,
+        policy_questions=questions,
+        ai_activity=activity,
     )
     STORE.save(SESSION)
-    return {"mandate": asdict(SESSION.mandate), "policy": _policy_payload(policy)}
+    return {
+        "mandate": asdict(SESSION.mandate),
+        "policy": _policy_payload(policy, questions, activity),
+    }
+
+
+@app.post("/api/policy/draft")
+def draft_policy(body: InstructionIn) -> dict:
+    """Create a draft. Nothing is authorised until the customer confirms."""
+    return _store_draft(compile_policy(body.instruction))
+
+
+@app.post("/api/policy/refine")
+def refine_policy(body: PolicyRefineIn) -> dict:
+    """Apply the customer's answers, then compile and show a fresh draft."""
+    mandate = SESSION.mandate
+    if mandate is None or mandate.status != "draft":
+        raise HTTPException(409, "There is no draft policy to clarify.")
+
+    questions = [PolicyQuestion(**question) for question in mandate.policy_questions]
+    known = {question.id for question in questions}
+    answers = {answer.question_id: answer.answer.strip() for answer in body.answers}
+    unknown = sorted(set(answers) - known)
+    if unknown:
+        raise HTTPException(400, f"Unknown policy question(s): {', '.join(unknown)}")
+    unanswered = [q.id for q in questions if q.blocking and not answers.get(q.id)]
+    if unanswered:
+        raise HTTPException(400, f"Answer required for: {', '.join(unanswered)}")
+
+    revised, revision_activity = POLICY_CLARIFIER.revise_with_activity(
+        mandate.instruction,
+        questions,
+        answers,
+        use_ai=SESSION.settings.ai_enabled,
+        failure_mode=SESSION.settings.ai_failure_mode,
+    )
+    if revised is None:
+        raise HTTPException(
+            503,
+            "The policy clarification model is unavailable. Edit the instruction directly and draft it again.",
+        )
+    return _store_draft(compile_policy(revised), [revision_activity.to_payload()])
 
 
 @app.post("/api/policy/confirm")
@@ -252,6 +382,9 @@ def confirm_policy(body: ConfirmIn) -> dict:
         raise HTTPException(409, "There is no draft to confirm.")
     if not body.confirmed:
         raise HTTPException(400, "A policy takes effect only when you confirm it.")
+    blocking = [q for q in SESSION.mandate.policy_questions if q.get("blocking")]
+    if blocking:
+        raise HTTPException(409, "Answer the required policy question before confirming.")
     SESSION.mandate.status = "active"
     SESSION.mandate.mandate_id = SESSION.mandate.draft_id.replace("DRAFT", "TM")
     SESSION.mandate.confirmed_at = _now()
@@ -343,10 +476,11 @@ def start_run(scenario_id: str) -> dict:
 
     replay = BUILDER.build(scenario_id, compiled, mandate_id=mandate.mandate_id)
     state = RunState(run_id=scenario_id)
+    engine = _demo_engine()
     steps: list[dict] = []
 
     for event in replay.events:
-        verdict = ENGINE.decide(event, state)
+        verdict = engine.decide(event, state)
         record = DecisionRecord.build(scenario_id, event, verdict)
         SESSION.log.append(record)
         auth = event.authorization
@@ -368,6 +502,28 @@ def start_run(scenario_id: str) -> dict:
                 for i in auth.items
             ],
         }
+        if verdict.clarification:
+            clarification = verdict.clarification
+            status = clarification.status
+            if SESSION.settings.ai_failure_mode != "none":
+                status = f"simulated_{SESSION.settings.ai_failure_mode}"
+            elif not SESSION.settings.ai_enabled:
+                status = "disabled"
+            step["clarification"]["status"] = status
+            step["ai_activity"] = [
+                {
+                    "model": Settings.from_env().llm_model,
+                    "task": "Purchase clarification",
+                    "result": (
+                        "Reworded purchase question"
+                        if not clarification.fallback_used
+                        else "Used deterministic purchase question"
+                    ),
+                    "latency_ms": round(clarification.latency_ms, 1),
+                    "fallback_used": clarification.fallback_used,
+                    "status": status,
+                }
+            ]
         steps.append(step)
         if verdict.decision is Decision.STEP_UP:
             raised = datetime.now(timezone.utc)
@@ -506,7 +662,8 @@ def journal() -> dict:
 @app.post("/api/session/reset")
 def reset_session() -> dict:
     global SESSION
-    SESSION = Session()
+    settings = SESSION.settings
+    SESSION = Session(settings=settings)
     STORE.clear()
     return {"reset": True}
 

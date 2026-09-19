@@ -177,6 +177,16 @@ does not hand the agent a fresh budget.
 
 ---
 
+## What that produced
+
+Running against the live sandbox, our layer answered all 45 proposed purchases:
+**17 approved, 23 declined, 5 brought to the customer.** Zero parse failures,
+zero missed deadlines, slowest decision 2.88 ms against an 8,000 ms budget —
+and the counts match the offline replay exactly.
+
+Every one of those 45 verdicts was ours. The platform supplied the facts and
+took the answer; it formed no view about any of them.
+
 ## Why it matters
 
 The challenge is called *Agent on a Leash*. The platform supplies the agent and

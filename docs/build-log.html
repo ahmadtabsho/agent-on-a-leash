@@ -4,18 +4,12 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
 <style>
   :root {
-    --ground: #eef1f4;
-    --surface: #ffffff;
-    --surface-2: #f5f8fa;
-    --line: #d3dae1;
-    --ink: #0d1318;
-    --ink-2: #505d69;
-    --ink-3: #7b8794;
-    --accent: #14509b;
-    --accent-soft: #e2ebf7;
-    --ok: #0a6b45;
-    --stop: #a32218;
-    --ask: #855800;
+    --ground: #eef1f4; --surface: #ffffff; --surface-2: #f5f8fa;
+    --line: #d3dae1; --ink: #0d1318; --ink-2: #505d69; --ink-3: #7b8794;
+    --accent: #14509b; --accent-soft: #e2ebf7;
+    --ok: #0a6b45; --ok-bg: #e0f1e9;
+    --stop: #a32218; --stop-bg: #fae7e5;
+    --ask: #855800; --ask-bg: #faefda;
     --display: "IBM Plex Sans Condensed", "Helvetica Neue", Arial, sans-serif;
     --body: "IBM Plex Serif", Georgia, "Times New Roman", serif;
     --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -25,14 +19,18 @@
       --ground: #0c1115; --surface: #141b21; --surface-2: #1a232b;
       --line: #27323c; --ink: #e6ecf2; --ink-2: #9aa7b4; --ink-3: #6e7c89;
       --accent: #74abf0; --accent-soft: #15273d;
-      --ok: #4fc08d; --stop: #f18d83; --ask: #e2b662;
+      --ok: #4fc08d; --ok-bg: #0e2a1e;
+      --stop: #f18d83; --stop-bg: #2f1613;
+      --ask: #e2b662; --ask-bg: #2d2412;
     }
   }
   :root[data-theme="dark"] {
     --ground: #0c1115; --surface: #141b21; --surface-2: #1a232b;
     --line: #27323c; --ink: #e6ecf2; --ink-2: #9aa7b4; --ink-3: #6e7c89;
     --accent: #74abf0; --accent-soft: #15273d;
-    --ok: #4fc08d; --stop: #f18d83; --ask: #e2b662;
+    --ok: #4fc08d; --ok-bg: #0e2a1e;
+    --stop: #f18d83; --stop-bg: #2f1613;
+    --ask: #e2b662; --ask-bg: #2d2412;
   }
 
   * { box-sizing: border-box; }
@@ -41,196 +39,275 @@
     font-family: var(--body); font-size: 16.5px; line-height: 1.6;
     -webkit-font-smoothing: antialiased;
   }
-  .page {
-    max-width: 760px; margin: 0 auto;
-    padding-block: 40px 80px; padding-inline: 20px;
-    display: grid; gap: 40px;
-  }
+  .page { max-width: 820px; margin: 0 auto; padding-block: 40px 80px; padding-inline: 20px; display: grid; gap: 42px; }
 
   header { border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
-  .eyebrow {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--accent); margin: 0 0 12px;
-  }
-  h1 {
-    font-family: var(--display); font-weight: 700;
-    font-size: clamp(34px, 6.5vw, 52px); line-height: 1.04;
-    letter-spacing: -0.02em; margin: 0; text-wrap: balance;
-  }
-  .sub { color: var(--ink-2); font-style: italic; margin: 12px 0 0; max-width: 54ch; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin: 0 0 12px; }
+  h1 { font-family: var(--display); font-weight: 700; font-size: clamp(34px, 6.5vw, 52px); line-height: 1.04; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+  .sub { color: var(--ink-2); font-style: italic; margin: 12px 0 0; max-width: 56ch; }
 
-  .nums {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-    gap: 1px; background: var(--line); border: 1px solid var(--line); margin-top: 24px;
+  .live {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 18px;
+    font-family: var(--mono); font-size: 12.5px;
+    background: var(--ok-bg); color: var(--ok);
+    border-radius: 999px; padding: 4px 14px;
   }
+  .live .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+
+  .nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-top: 22px; }
   .nums div { background: var(--surface); padding: 11px 13px; }
-  .nums dt {
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
-    text-transform: uppercase; color: var(--ink-3); margin: 0 0 3px;
-  }
-  .nums dd {
-    font-family: var(--display); font-weight: 600; font-size: 23px;
-    margin: 0; font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
-  }
+  .nums dt { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 3px; }
+  .nums dd { font-family: var(--display); font-weight: 600; font-size: 23px; margin: 0; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
   .nums dd small { font-size: 12px; color: var(--ink-3); }
 
-  h2 {
-    font-family: var(--display); font-weight: 700;
-    font-size: 25px; letter-spacing: -0.015em; margin: 0 0 4px;
-  }
-  .kicker {
-    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px;
-  }
-  p { margin: 0 0 14px; max-width: 66ch; }
+  h2 { font-family: var(--display); font-weight: 700; font-size: 26px; letter-spacing: -0.015em; margin: 0 0 6px; text-wrap: balance; }
+  h3 { font-family: var(--display); font-weight: 600; font-size: 17px; margin: 26px 0 8px; }
+  .kicker { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px; }
+  p { margin: 0 0 14px; max-width: 68ch; }
   strong { font-weight: 600; }
   a { color: var(--accent); }
-  code {
-    font-family: var(--mono); font-size: 0.85em; background: var(--surface-2);
-    border: 1px solid var(--line); border-radius: 3px; padding: 0.06em 0.34em;
-    white-space: nowrap;
-  }
+  code { font-family: var(--mono); font-size: 0.85em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 3px; padding: 0.06em 0.34em; white-space: nowrap; }
 
-  /* build steps */
+  .scroll { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; background: var(--surface); }
+  th, td { text-align: left; padding: 9px 13px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; background: var(--surface-2); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  tfoot td { font-weight: 600; border-top: 2px solid var(--line); background: var(--surface-2); }
+
   .built { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); }
-  .built div {
-    background: var(--surface); padding: 11px 15px;
-    display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 13px; align-items: baseline;
-  }
-  .built b {
-    font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500;
-  }
+  .built div { background: var(--surface); padding: 11px 15px; display: grid; grid-template-columns: 26px minmax(0, 1fr) 62px; gap: 13px; align-items: baseline; }
+  .built b { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500; }
   .built span { font-size: 15px; }
   .built em { font-style: normal; color: var(--ink-2); }
+  .done { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ok); text-align: right; }
 
-  /* bug list */
   ol.bugs { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 10px; }
-  ol.bugs li {
-    background: var(--surface); border: 1px solid var(--line);
-    border-left: 3px solid var(--stop); padding: 12px 15px; font-size: 15px;
-  }
+  ol.bugs li { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--stop); padding: 12px 15px; font-size: 15px; }
   ol.bugs b { font-family: var(--display); font-weight: 600; display: block; margin-bottom: 3px; font-size: 16px; }
   ol.bugs span { color: var(--ink-2); }
-  ol.bugs code { font-size: 0.82em; }
 
-  .note {
-    border-left: 3px solid var(--accent); background: var(--accent-soft);
-    padding: 14px 18px; margin: 0 0 14px; max-width: 64ch;
-  }
+  .todo { display: grid; gap: 10px; margin: 16px 0; }
+  .todo li { list-style: none; background: var(--surface); border: 1px solid var(--line); padding: 12px 15px; font-size: 15px; }
+  .todo li.hot { border-left: 3px solid var(--stop); }
+  .todo li.warm { border-left: 3px solid var(--ask); }
+  .todo li.cool { border-left: 3px solid var(--line); }
+  .todo b { font-family: var(--display); font-weight: 600; display: block; margin-bottom: 3px; font-size: 16px; }
+  .todo span { color: var(--ink-2); }
+  ul.todo { padding-left: 0; margin: 16px 0; }
+
+  .note { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 14px 18px; margin: 0 0 14px; max-width: 66ch; }
   .note p { margin: 0; }
   .note p + p { margin-top: 8px; }
   .note b { font-family: var(--display); font-size: 15px; }
 
-  ul.open { margin: 0; padding-left: 19px; max-width: 66ch; }
-  ul.open li { margin-bottom: 8px; }
-
-  pre {
-    font-family: var(--mono); font-size: 13px; line-height: 1.6;
-    background: var(--surface); border: 1px solid var(--line);
-    padding: 14px 16px; overflow-x: auto; margin: 0 0 14px;
-  }
+  pre { font-family: var(--mono); font-size: 13px; line-height: 1.62; background: var(--surface); border: 1px solid var(--line); padding: 14px 16px; overflow-x: auto; margin: 0 0 14px; }
   .cm { color: var(--ink-3); }
 
-  footer {
-    border-top: 2px solid var(--ink); padding-top: 16px;
-    font-family: var(--mono); font-size: 12px; color: var(--ink-3);
-    display: flex; flex-wrap: wrap; gap: 6px 20px;
-  }
+  .chip { display: inline-block; font-family: var(--mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 3px; padding: 2px 7px; }
+  .chip.ok { background: var(--ok-bg); color: var(--ok); }
+  .chip.stop { background: var(--stop-bg); color: var(--stop); }
+  .chip.ask { background: var(--ask-bg); color: var(--ask); }
+
+  footer { border-top: 2px solid var(--ink); padding-top: 16px; font-family: var(--mono); font-size: 12px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 6px 20px; }
 </style>
 
 <div class="page">
 
   <header>
-    <p class="eyebrow">Viseca &times; START Global 2026 &middot; build summary</p>
+    <p class="eyebrow">Viseca × START Global 2026 · Team PrismAI · project status</p>
     <h1>Leash Build Log</h1>
-    <p class="sub">What got built, what broke, and what is still open &mdash; the short version.</p>
+    <p class="sub">What was provided, what we built, what it does on the live API, and what is still open.</p>
+    <span class="live"><span class="dot"></span>Running live on the sandbox · all 45 purchases answered</span>
     <dl class="nums">
-      <div><dt>Steps</dt><dd>9</dd></div>
-      <div><dt>Commits</dt><dd>7</dd></div>
-      <div><dt>Tests</dt><dd>207</dd></div>
       <div><dt>Purchases</dt><dd>45</dd></div>
-      <div><dt>Slowest</dt><dd>0.97<small> ms</small></dd></div>
+      <div><dt>Slowest</dt><dd>2.88<small> ms</small></dd></div>
+      <div><dt>Allowed</dt><dd>8000<small> ms</small></dd></div>
+      <div><dt>Tests</dt><dd>259</dd></div>
+      <div><dt>Python</dt><dd>5.8<small>k lines</small></dd></div>
+      <div><dt>Commits</dt><dd>18</dd></div>
     </dl>
   </header>
 
   <section>
-    <p class="kicker">The task</p>
-    <h2>Decide whether an AI agent may spend your money</h2>
-    <p>An AI shopping assistant can now pay with a real card. This builds the layer in between &mdash; the one that looks at each proposed purchase and answers <strong style="color:var(--ok)">approve</strong>, <strong style="color:var(--stop)">decline</strong>, or <strong style="color:var(--ask)">ask the customer</strong>, inside eight seconds, with reasons attached.</p>
-    <p>Not the shopping agent. Not the payment. Just the decision, and the customer&rsquo;s control over it.</p>
+    <p class="kicker">1 — The task</p>
+    <h2>Decide whether an AI agent may spend a customer's money</h2>
+    <p>An AI shopping assistant can now pay with a real card. This builds the layer in between — the one that looks at each proposed purchase and returns <strong style="color:var(--ok)">approve</strong>, <strong style="color:var(--stop)">decline</strong>, or <strong style="color:var(--ask)">ask the customer</strong>, inside eight seconds, with the evidence attached.</p>
+    <p>Not the shopping agent. Not the payment. Just the decision, and the customer's control over it.</p>
   </section>
 
   <section>
-    <p class="kicker">What was built</p>
-    <h2>Nine steps, in order</h2>
-    <div class="built">
-      <div><b>1</b><span><strong>Repo &amp; data pack.</strong> <em>Vendored the 45 purchases and 4,701 history rows; every file checked against its manifest by sha256.</em></span></div>
-      <div><b>2</b><span><strong>Typed contract.</strong> <em>Strict parsing against the platform&rsquo;s own schema. Money is Decimal, never float.</em></span></div>
-      <div><b>3</b><span><strong>Policy compiler.</strong> <em>A sentence becomes executable rules, plain-English guidance, and the questions it refuses to answer for you.</em></span></div>
-      <div><b>4</b><span><strong>Decision engine.</strong> <em>Seven stages, pure function, no network. All 45 purchases decided in under a millisecond each.</em></span></div>
-      <div><b>5</b><span><strong>Replay harness.</strong> <em>Runs every scenario offline with no API key, journalling each decision so a crash cannot reset the budget.</em></span></div>
-      <div><b>6</b><span><strong>Sandbox worker.</strong> <em>Long-polls the Viseca API and answers each purchase; a repeat delivery replays the saved answer.</em></span></div>
-      <div><b>7</b><span><strong>Control interface.</strong> <em>React + a separate API. Draft, confirm, run, pause, answer, tighten, revoke.</em></span></div>
-      <div><b>8</b><span><strong>Optional model.</strong> <em>A second opinion on one narrow question. Off by default, and unable to approve anything.</em></span></div>
-      <div><b>9</b><span><strong>Demo &amp; docs.</strong> <em>The three moments the brief asks to show, picked from a live run rather than scripted.</em></span></div>
+    <p class="kicker">2 — What was provided</p>
+    <h2>What arrived with the challenge</h2>
+
+    <h3>The brief and the contract</h3>
+    <p><code>challenge.md</code>, <code>technical_details.md</code>, and three JSON Schemas covering the event, the history file and the data pack.</p>
+
+    <h3>A synthetic data pack</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>File</th><th class="num">Rows</th><th>Holds</th></tr></thead>
+        <tbody>
+          <tr><td><code>purchase_attempts</code></td><td class="num">45</td><td>The purchases to decide, across 5 scenarios</td></tr>
+          <tr><td><code>purchase_attempt_items</code></td><td class="num">56</td><td>Their cart lines</td></tr>
+          <tr><td><code>authorization_history</code></td><td class="num">4,701</td><td>Past activity — the basis for any behavioural signal</td></tr>
+          <tr><td><code>merchants</code></td><td class="num">58</td><td>Name, category, MCC, country, capabilities</td></tr>
+          <tr><td><code>items</code> · <code>customers</code> · <code>accounts</code> · <code>cards</code></td><td class="num">158</td><td>Catalogue and cardholder context</td></tr>
+          <tr><td><code>scenario_catalogue</code> · <code>authorities</code> · <code>fx_rates</code></td><td class="num">14</td><td>The five instructions, and fixed CHF rates</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>No expected decisions, no risk labels, no answer key. Historical <code>status</code> is what happened at the time, not a verdict.</p>
+
+    <h3>A hosted sandbox, and a simulator</h3>
+    <p>15 endpoints covering the mandate lifecycle, run control, long-polling and decisions — plus the simulator that plays the shopping agent. The brief names three things explicitly outside our scope: <strong>the agent, payment processing, and merchant databases</strong>.</p>
+
+    <div class="note">
+      <p><b>What the platform does not do.</b></p>
+      <p>It stores <code>hard_rules</code> and an <code>uncertainty_policy</code> — and never evaluates either. The contract says a rule's <code>field</code> is "a convention for your engine to interpret, <strong>not a formula the API runs</strong>."</p>
+      <p>It is a filing cabinet and a delivery mechanism. <strong>Every judgement in this system is ours.</strong></p>
     </div>
   </section>
 
   <section>
-    <p class="kicker">What broke</p>
-    <h2>Five bugs the fixtures caught</h2>
-    <p>The first engine looked right and was wrong in four places. All four were found by <em>running</em> the supplied data, not by reading the code.</p>
+    <p class="kicker">3 — What we built</p>
+    <h2>Twelve steps, all complete</h2>
+    <div class="built">
+      <div><b>1</b><span><strong>Repo &amp; data pack.</strong> <em>Every file checked against its manifest by sha256 on each run.</em></span><span class="done">done</span></div>
+      <div><b>2</b><span><strong>Typed contract.</strong> <em>Strict parsing against the platform's own schema. Money is Decimal, never float.</em></span><span class="done">done</span></div>
+      <div><b>3</b><span><strong>Policy compiler.</strong> <em>A sentence becomes executable rules, plain-English guidance, and the questions it refuses to answer for you.</em></span><span class="done">done</span></div>
+      <div><b>4</b><span><strong>Decision engine.</strong> <em>Seven stages, pure function, no network.</em></span><span class="done">done</span></div>
+      <div><b>5</b><span><strong>Replay harness.</strong> <em>Every scenario offline with no API key, journalling each decision.</em></span><span class="done">done</span></div>
+      <div><b>6</b><span><strong>Sandbox client &amp; worker.</strong> <em>Long-polls and answers; a repeat delivery replays the saved answer.</em></span><span class="done">done</span></div>
+      <div><b>7</b><span><strong>Control interface.</strong> <em>React + a separate API. Draft, confirm, run, pause, answer, tighten, revoke.</em></span><span class="done">done</span></div>
+      <div><b>8</b><span><strong>Optional model.</strong> <em>A second opinion on one narrow question. Off by default, and unable to approve anything.</em></span><span class="done">done</span></div>
+      <div><b>9</b><span><strong>Demo &amp; docs.</strong> <em>Three moments picked from a live run rather than scripted.</em></span><span class="done">done</span></div>
+      <div><b>10</b><span><strong>One-command live run.</strong> <em><code>leash run</code>: compile, confirm, start, decide, resolve — instead of hand-typed curl under time pressure.</em></span><span class="done">done</span></div>
+      <div><b>11</b><span><strong>Step-up timeout.</strong> <em>The customer's window, tracked from bootstrap, with a live countdown.</em></span><span class="done">done</span></div>
+      <div><b>12</b><span><strong>Session persistence.</strong> <em>Policy, inbox and journal survive a restart.</em></span><span class="done">done</span></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">4 — Results</p>
+    <h2>All 45 purchases, answered on the live API</h2>
+    <p>Against the real sandbox, not a simulation. <strong>Zero parse failures, zero missed deadlines</strong> — and the counts match the offline replay exactly, which is the best evidence the engine is deterministic.</p>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Scenario</th><th class="num">Approve</th><th class="num">Decline</th><th class="num">Ask</th><th class="num">Slowest</th></tr></thead>
+        <tbody>
+          <tr><td>Connection check <code>SCEN0000</code></td><td class="num">1</td><td class="num">0</td><td class="num">0</td><td class="num">0.32 ms</td></tr>
+          <tr><td>Household budget <code>SCEN0001</code></td><td class="num">5</td><td class="num">5</td><td class="num">0</td><td class="num">0.58 ms</td></tr>
+          <tr><td>Item and terms <code>SCEN0002</code></td><td class="num">3</td><td class="num">7</td><td class="num">2</td><td class="num">1.48 ms</td></tr>
+          <tr><td>Session integrity <code>SCEN0003</code></td><td class="num">4</td><td class="num">6</td><td class="num">1</td><td class="num">2.88 ms</td></tr>
+          <tr><td>Manipulated agent <code>SCEN0004</code></td><td class="num">4</td><td class="num">5</td><td class="num">2</td><td class="num">2.57 ms</td></tr>
+        </tbody>
+        <tfoot><tr><td>Total</td><td class="num">17</td><td class="num">23</td><td class="num">5</td><td class="num">2.88 ms</td></tr></tfoot>
+      </table>
+    </div>
+    <p>The human path was exercised live too: paused purchases resolved through <code>/resolve</code>, then permission revoked.</p>
+  </section>
+
+  <section>
+    <p class="kicker">5 — What only the real API could tell us</p>
+    <h2>Four things the written spec does not say</h2>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Discovery</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td><strong>The base URL in the docs is not the live one.</strong> The service runs on Railway, not the Azure host the brief names.</td><td>Hours of 401s that looked like a bad key.</td></tr>
+          <tr><td><strong><code>event_id</code> is an integer.</strong> The contract never gives it a type; it is the cursor <code>/v1/events?since=</code> pages through.</td><td>Typed as a string, it rejected <em>every</em> purchase on first contact.</td></tr>
+          <tr><td><strong><code>redelivery_after_seconds: 3</code></strong> — unanswered purchases come back after three seconds.</td><td>Our idempotency already handled it; <code>delivery_count</code> now makes it visible.</td></tr>
+          <tr><td><strong>An unanswered step-up becomes <code>timed_out</code> by itself at exactly 120 s.</strong> Measured, not assumed.</td><td>Confirms we must send nothing when a window lapses.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Bootstrap also confirmed every assumption we had built on: the 8-second decision budget, the 120-second human window, the 25-second long-poll, and <code>mandate_patch_tighten_only: true</code>. One thing to remember on the day — <code>/v1/team/reset</code> is <strong>disabled during judging</strong>, so do not build a demo that depends on it.</p>
+  </section>
+
+  <section>
+    <p class="kicker">6 — What broke</p>
+    <h2>Six bugs the fixtures and the live API caught</h2>
+    <p>Four came from running the supplied data rather than reading it. One came from a test. One came from first contact with the real service.</p>
     <ol class="bugs">
-      <li><b>The spending limit let through the purchase that broke it</b><span>A rolling limit compared only <em>prior</em> spend, so CHF&nbsp;299.50&nbsp;+&nbsp;65.50 sailed past a CHF&nbsp;300 cap and the <em>next</em> order got blamed.</span></li>
-      <li><b>&ldquo;The seller didn&rsquo;t say&rdquo; was treated as &ldquo;no&rdquo;</b><span>An unstated return policy was declining. It is not permission &mdash; but it is not a refusal either. It goes to the customer.</span></li>
-      <li><b>A trail shoe passed as a road-running shoe</b><span>Its description advertises a &ldquo;lugged <strong>off-road</strong> sole&rdquo;, and the matcher was reading marketing copy as identity.</span></li>
-      <li><b>&ldquo;Pause&rdquo; was being read as &ldquo;refuse&rdquo;</b><span>An unfamiliar device is a new laptop as often as it is an intruder. Signals that rest on a guess now ask rather than block.</span></li>
-      <li><b>Our own output failed our own contract</b><span>Found by a test. The serialiser wrote amounts as strings, so an event saved and reloaded no longer validated.</span></li>
+      <li><b>The spending limit let through the purchase that broke it</b><span>A rolling limit compared only <em>prior</em> spend, so CHF 299.50 + 65.50 sailed past a CHF 300 cap and the <em>next</em> order got blamed.</span></li>
+      <li><b>"The seller didn't say" was treated as "no"</b><span>An unstated return policy was declining. It is not permission — but it is not a refusal either.</span></li>
+      <li><b>A trail shoe passed as a road-running shoe</b><span>Its description advertises a "lugged <strong>off-road</strong> sole", and the matcher was reading marketing copy as identity.</span></li>
+      <li><b>"Pause" was being read as "refuse"</b><span>An unfamiliar device is a new laptop as often as it is an intruder. Signals resting on a guess now ask rather than block.</span></li>
+      <li><b>Our own output failed our own contract</b><span>The serialiser wrote amounts as strings, so an event saved and reloaded no longer validated.</span></li>
+      <li><b>The envelope from the live service did not parse</b><span><code>event_id</code> arrives as an integer. A real captured envelope is now a test fixture so the next drift shows up in the suite.</span></li>
     </ol>
   </section>
 
   <section>
-    <p class="kicker">Three decisions</p>
-    <h2>The choices that shape everything else</h2>
+    <p class="kicker">7 — The four decisions</p>
+    <h2>What makes it a leash rather than a formality</h2>
+    <p>None of these are in the contract. All of them are what the challenge is actually grading.</p>
 
     <div class="note">
       <p><b>Merchant text is read, never obeyed.</b></p>
-      <p>Product descriptions are useful (size, return window) and written by whoever wants the payment approved. Facts are pulled out by pattern &mdash; a pattern can only yield a number or a word, so no phrasing produces permission. The scanner holds no reference to the policy, so by construction nothing written in a shop&rsquo;s description can reach the verdict.</p>
+      <p>Facts are pulled out by pattern, and a pattern can only yield a number or a word — so no phrasing produces permission. The scanner holds no reference to the policy, so by construction nothing a shop writes can reach the verdict.</p>
     </div>
-
     <div class="note">
-      <p><b>&ldquo;Uncertain&rdquo; is a separate answer from &ldquo;no&rdquo;.</b></p>
-      <p>Most of the work is keeping those apart. Collapsing them one way blocks ordinary shopping; the other way waves through things nobody checked. When the engine cannot establish a fact, the customer&rsquo;s own stated preference decides.</p>
+      <p><b>"Uncertain" is a separate answer from "no".</b></p>
+      <p>Collapsing them one way blocks ordinary shopping; the other way waves through what nobody checked. When a fact cannot be established, the customer's own stated preference decides.</p>
     </div>
-
+    <div class="note">
+      <p><b>A policy can only ever be tightened.</b></p>
+      <p>Rules combine with AND, so an addition can only narrow what is allowed. Adding <code>≤ CHF 200</code> over <code>≤ CHF 120</code> does not raise the limit — and the customer is told that rather than left believing it did.</p>
+    </div>
     <div class="note">
       <p><b>The model cannot approve anything.</b></p>
-      <p>It answers one question, never sees the policy, and can only raise doubt &mdash; never resolve it. The worst a broken or hostile model can do is send a purchase to the customer. A test proves a broken model gives identical decisions to no model at all.</p>
+      <p>It answers one question, never sees the policy, and can only raise doubt. A test proves a broken model gives identical decisions to no model at all.</p>
     </div>
   </section>
 
   <section>
-    <p class="kicker">Still open</p>
-    <h2>What is honestly not done</h2>
-    <ul class="open">
-      <li><strong>Nothing has touched the live API.</strong> Every endpoint is written and tested against a mock, but the team key arrives on event day. Only <code>/healthz</code> has been hit for real.</li>
-      <li><strong>The control session is in-memory.</strong> Fine for a demo; a real deployment needs the policy and inbox to survive a restart. The decision journal already does.</li>
-      <li><strong>Two numbers are judgements, not measurements</strong> &mdash; the familiarity threshold (one prior purchase) and the duplicate window (three hours).</li>
-      <li><strong>The optional model has never called a real endpoint.</strong> Every failure path is tested; the happy path is not.</li>
+    <p class="kicker">8 — What is left</p>
+    <h2>What we still need to do</h2>
+    <p>Ordered by what it would cost if it bit during judging.</p>
+
+    <h3>Only a person can do these</h3>
+    <ul class="todo">
+      <li class="hot"><b>Stress the policy compiler with your own sentences</b><span>The weakest link in the chain, and the one nobody but you can test — run <code>leash policy "your wording"</code> on the phrasings you will actually use in the demo. A wrong reading found now is cheap; found on stage it is not.</span></li>
+      <li class="hot"><b>Rehearse the demo once, timed</b><span>Decide whether you are presenting from the browser or the terminal, and know how long it takes.</span></li>
+      <li class="warm"><b>Check the two names on the team slide</b><span>"Ahmad" (not Ahmed) was used, matching the GitHub and git identity. "Wictor" was kept exactly as supplied, though the photo file says viktor.</span></li>
+    </ul>
+
+    <h3>Code gaps, in order</h3>
+    <ul class="todo">
+      <li class="warm"><b><code>GET /v1/events</code> reconciliation</b><span>The client method exists; nothing calls it. It would matter for recovering cleanly from a network drop mid-run rather than relying on redelivery alone.</span></li>
+      <li class="warm"><b>No UI for adding a brand-new rule</b><span>The API supports tightening with <code>add_rules</code>; the interface only exposes the one-click "refuse when unsure". A judge asking "can I lower my limit mid-run?" gets a curl command, not a button.</span></li>
+      <li class="cool"><b>Two numbers are judgements, not measurements</b><span>Merchant familiarity is <code>≥ 1</code> prior approved purchase; the duplicate window is 3 hours. Both work on the supplied data; neither is derived from anything. The compiler does explicitly ask the customer to set the first.</span></li>
+      <li class="cool"><b>The advisor has never called a real model</b><span>Every failure path is tested; the happy path against a live endpoint is not. It is off by default, so this only matters if you want to demo it.</span></li>
+      <li class="cool"><b>Familiarity loads all 4,701 history rows at import</b><span>Correct at this size, wrong shape at real scale — it should be an index or a query.</span></li>
     </ul>
   </section>
 
   <section>
-    <p class="kicker">Seeing it</p>
-    <h2>Three commands</h2>
-    <pre><code>make demo      <span class="cm"># the three moments the brief asks to show</span>
+    <p class="kicker">9 — Running it</p>
+    <h2>Every command you need</h2>
+    <pre><code><span class="cm"># offline — no API key needed for any of this</span>
+make demo      <span class="cm"># the three moments the brief asks to show</span>
 make replay    <span class="cm"># all 45 purchases, every decision and why</span>
-make serve &amp;&amp; make ui   <span class="cm"># the interface on localhost:5173</span></code></pre>
-    <p>No API key needed for any of it &mdash; the supplied scenarios run entirely offline. The full walkthrough, with the pipeline explained stage by stage, is in <code>docs/pipeline.html</code>.</p>
+make test      <span class="cm"># 259 tests</span>
+
+<span class="cm"># the interface, two processes as they would deploy</span>
+make serve     <span class="cm"># control API on :8000</span>
+make ui        <span class="cm"># control interface on :5173</span>
+
+<span class="cm"># live, with TEAM_API_KEY and LEASH_BASE_URL in .env</span>
+make health    <span class="cm"># verifies the key is accepted, not merely present</span>
+.venv/bin/leash run --scenario SCEN0004 --log runs/live.jsonl</code></pre>
+    <p>The deck is in <code>deck/</code> as an editable <code>.pptx</code> and a <code>.pdf</code>. Deeper documents: <code>docs/pipeline.html</code> for how the engine works stage by stage, <code>docs/code-map.md</code> for what calls what, <code>docs/what-is-ours.md</code> for the boundary with Viseca.</p>
   </section>
 
   <footer>
-    <span>leash/0.1.0</span>
+    <span>Team PrismAI · team_0014f616</span>
+    <span>leash/0.1.0 · 259 tests</span>
     <span>github.com/ahmadtabsho/agent-on-a-leash</span>
   </footer>
 

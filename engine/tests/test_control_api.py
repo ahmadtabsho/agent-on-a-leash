@@ -259,3 +259,21 @@ def test_the_journal_records_every_decision(client):
     records = client.get("/api/journal").json()["records"]
     assert len(records) == 10
     assert all(r["reason_codes"] is not None for r in records)
+
+
+def test_a_run_reports_the_policy_it_was_actually_judged_against(client):
+    """Showing the scenario's own wording implied a policy that was not in
+    force — every purchase was refused against a different instruction than
+    the one on screen."""
+    authorise(client, GROCERIES)
+    body = client.post("/api/runs/SCEN0004").json()
+
+    assert body["instruction"] == GROCERIES, "the authorised policy, not the scenario's"
+    assert body["scenario_instruction"] != GROCERIES
+    assert body["policy_matches_scenario"] is False
+
+
+def test_a_matching_policy_is_not_flagged(client):
+    authorise(client, MONITOR)
+    body = client.post("/api/runs/SCEN0004").json()
+    assert body["policy_matches_scenario"] is True

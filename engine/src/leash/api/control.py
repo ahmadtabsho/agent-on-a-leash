@@ -37,7 +37,9 @@ BUILDER = EventBuilder()
 
 # The customer's window to answer a paused purchase. The live service reports
 # 120 seconds; this mirrors it so the interface can show a truthful countdown.
-HUMAN_TIMEOUT_SECONDS = 120.0
+# LEASH_HUMAN_TIMEOUT_SECONDS shortens it for demonstration — never lengthens
+# it, because promising time the platform will not honour would be a lie.
+HUMAN_TIMEOUT_SECONDS = min(120.0, Settings.from_env().human_timeout_override_s or 120.0)
 
 
 # --- session ---------------------------------------------------------------
@@ -534,7 +536,15 @@ def start_run(scenario_id: str) -> dict:
     SESSION.runs[scenario_id] = {
         "scenario_id": scenario_id,
         "name": replay.scenario_name,
-        "instruction": replay.cardholder_instruction,
+        # What the customer actually authorised, which is what the purchases
+        # were judged against. Showing the scenario's own wording here implied
+        # a policy that was not in force.
+        "instruction": mandate.instruction,
+        # The scenario's nominal instruction, kept separate so a mismatch
+        # between the two is visible rather than confusing.
+        "scenario_instruction": replay.cardholder_instruction,
+        "policy_matches_scenario": mandate.instruction.strip()
+        == replay.cardholder_instruction.strip(),
         "steps": steps,
         "counts": _counts(steps),
         "state": state,

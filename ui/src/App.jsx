@@ -540,7 +540,15 @@ export default function App() {
       {run && (
         <div className="card">
           <h2>{run.name}</h2>
-          <p className="hint">“{run.instruction}”</p>
+          <p className="hint">Judged against the policy you authorised: “{run.instruction}”</p>
+          {run.policy_matches_scenario === false && (
+            <div className="mismatch">
+              <strong>These purchases are not what your policy is about.</strong> The agent in
+              this scenario was told: “{run.scenario_instruction}” — so a lot will be refused
+              simply for falling outside what you authorised. That is correct, but to see the
+              scenario properly, authorise its own instruction instead.
+            </div>
+          )}
           <ul className="steps">
             {run.steps.map((step) => (
               <Step

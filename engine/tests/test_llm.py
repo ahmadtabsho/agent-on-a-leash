@@ -23,7 +23,8 @@ ENABLED = Settings(
     api_key=None,
     decision_budget_ms=2500,
     llm_enabled=True,
-    llm_model=DEFAULT_LLM_MODEL,
+    llm_provider="anthropic",
+    llm_model="claude-haiku-4-5-20251001",
     llm_timeout_ms=900,
 )
 
@@ -142,7 +143,7 @@ def test_any_failure_returns_nothing(exc):
 
 def test_a_reply_that_arrives_too_late_is_not_used():
     """The deadline is not ours to spend on a second opinion."""
-    late = Settings(ENABLED.base_url, None, 2500, True, "m", 10)
+    late = Settings(ENABLED.base_url, None, 2500, True, "anthropic", "m", 10)
 
     def slow(system, user, *, timeout_s):
         import time
@@ -154,7 +155,7 @@ def test_a_reply_that_arrives_too_late_is_not_used():
 
 
 def test_the_advisor_is_off_unless_explicitly_enabled():
-    off = Settings(ENABLED.base_url, None, 2500, False, "m", 900)
+    off = Settings(ENABLED.base_url, None, 2500, False, "anthropic", "m", 900)
     assert not IntentAdvisor(off, lambda *a, **k: '{"verdict":"match"}').available
 
 
@@ -217,3 +218,117 @@ def test_a_dissenting_model_can_only_escalate(builder):
     assert any(
         "intent_match_disputed" in {f.code for f in with_model[k].findings} for k in escalated
     )
+
+
+# --- providers -------------------------------------------------------------
+
+
+def _capture(provider: str, model: str, key_env: str, monkeypatch):
+    """Run one compare against a fake transport and return the request made."""
+    import httpx
+
+    from leash.llm.advisor import IntentAdvisor as Advisor
+
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        import json as _json
+
+        seen["url"] = str(request.url)
+        seen["headers"] = dict(request.headers)
+        seen["body"] = _json.loads(request.content)
+        if provider == "anthropic":
+            return httpx.Response(200, json={"content": [{"type": "text", "text": '{"verdict":"match"}'}]})
+        return httpx.Response(
+            200, json={"choices": [{"message": {"content": '{"verdict":"match"}'}}]}
+        )
+
+    transport = httpx.MockTransport(handler)
+    real_post = httpx.post
+    monkeypatch.setattr(httpx, "post", lambda url, **kw: httpx.Client(transport=transport).post(url, **kw))
+    monkeypatch.setenv(key_env, "test-key-123")
+
+    settings = Settings(
+        base_url="https://sandbox.invalid",
+        api_key=None,
+        decision_budget_ms=2500,
+        llm_enabled=True,
+        llm_provider=provider,
+        llm_model=model,
+        llm_timeout_ms=5000,
+    )
+    result = Advisor(settings).compare("27-inch monitor", "27-inch computer monitor", "electronics")
+    monkeypatch.setattr(httpx, "post", real_post)
+    return result, seen
+
+
+def test_openrouter_is_called_with_the_chat_shape(monkeypatch):
+    result, seen = _capture("openrouter", "openai/gpt-4o-mini", "OPENROUTER_API_KEY", monkeypatch)
+    assert result.advice is Advice.MATCH
+    assert seen["url"] == "https://openrouter.ai/api/v1/chat/completions"
+    assert seen["headers"]["authorization"] == "Bearer test-key-123"
+    assert seen["body"]["model"] == "openai/gpt-4o-mini"
+    assert [m["role"] for m in seen["body"]["messages"]] == ["system", "user"]
+    # OpenRouter asks callers to identify themselves.
+    assert "x-title" in seen["headers"]
+
+
+def test_openai_is_called_with_the_same_shape_at_its_own_endpoint(monkeypatch):
+    result, seen = _capture("openai", "gpt-4o-mini", "OPENAI_API_KEY", monkeypatch)
+    assert result.advice is Advice.MATCH
+    assert seen["url"] == "https://api.openai.com/v1/chat/completions"
+    assert seen["headers"]["authorization"] == "Bearer test-key-123"
+    assert seen["body"]["model"] == "gpt-4o-mini"
+
+
+def test_anthropic_is_called_with_the_messages_shape(monkeypatch):
+    result, seen = _capture("anthropic", "claude-haiku-4-5-20251001", "ANTHROPIC_API_KEY", monkeypatch)
+    assert result.advice is Advice.MATCH
+    assert seen["url"] == "https://api.anthropic.com/v1/messages"
+    assert seen["headers"]["x-api-key"] == "test-key-123"
+    assert "system" in seen["body"], "the system prompt is a top-level field here"
+
+
+def test_a_provider_we_do_not_know_is_simply_unavailable():
+    settings = Settings(
+        base_url="https://sandbox.invalid", api_key=None, decision_budget_ms=2500,
+        llm_enabled=True, llm_provider="some-new-vendor", llm_model="x", llm_timeout_ms=900,
+    )
+    assert not IntentAdvisor(settings).available
+
+
+def test_a_provider_with_no_key_is_unavailable(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    settings = Settings(
+        base_url="https://sandbox.invalid", api_key=None, decision_budget_ms=2500,
+        llm_enabled=True, llm_provider="openrouter", llm_model="x", llm_timeout_ms=900,
+    )
+    assert not IntentAdvisor(settings).available
+
+
+def test_one_budget_covers_the_whole_basket_not_each_line(builder):
+    """A three-line basket asking three times could spend three timeouts and
+    eat the decision deadline."""
+    from leash.decision import DecisionEngine, RunState
+
+    calls = {"n": 0}
+
+    def slow_but_agreeable(system, user, *, timeout_s):
+        calls["n"] += 1
+        import time
+
+        time.sleep(0.05)
+        return '{"verdict":"match","why":"same"}'
+
+    tight = Settings(
+        base_url="https://sandbox.invalid", api_key=None, decision_budget_ms=2500,
+        llm_enabled=True, llm_provider="openrouter", llm_model="x", llm_timeout_ms=60,
+    )
+    advisor = IntentAdvisor(tight, slow_but_agreeable)
+    policy = compile_policy(builder.catalogue["SCEN0002"]["cardholder_instruction"])
+    events = builder.build("SCEN0002", policy).events
+    engine, state = DecisionEngine(advisor=advisor), RunState()
+    for event in events:
+        engine.decide(event, state)
+
+    assert calls["n"] <= len(events), "at most one call per event once the budget is spent"
